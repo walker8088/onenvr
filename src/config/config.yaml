@@ -1,0 +1,15 @@
+cameras:
+  - name: doorway
+    rtsp_url: rtsp://192.168.1.10:554/stream1
+    codec: copy
+    interval: 300
+
+  - name: backyard
+    rtsp_url: rtsp://userid:password@192.168.1.20:554/live/stream
+    codec: copy
+    interval: 600
+
+retention_days: 7
+concatenation: true
+concatenation_time: "01:00"
+deletion_time: "02:00"
