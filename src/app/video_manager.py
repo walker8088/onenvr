@@ -46,6 +46,9 @@ class VideoManager:
 
             # Concatenate videos
             cmd = [
+                'ionice',
+                '-c', '2',
+                '-n', '7',
                 'ffmpeg',
                 '-hide_banner', '-y',
                 '-loglevel', 'warning',
