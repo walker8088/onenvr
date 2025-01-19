@@ -1,6 +1,7 @@
 import os
 import subprocess
 import logging
+import shutil
 from datetime import datetime
 import signal
 import glob
@@ -97,7 +98,17 @@ class StreamRecorder:
                 # Move file to date directory
                 filename = os.path.basename(raw_file)
                 new_path = os.path.join(date_dir, filename)
-                os.rename(raw_file, new_path)
+
+                # Verify read access to source and write access to destination
+                if not os.access(raw_file, os.R_OK):
+                    raise IOError(f"No read permission for source file: {raw_file}")
+                if not os.access(os.path.dirname(new_path), os.W_OK):
+                    raise IOError(f"No write permission for destination directory: {os.path.dirname(new_path)}")
+                # Verify enough space exists at destination
+                if os.path.getsize(raw_file) > shutil.disk_usage(date_dir).free:
+                    raise IOError(f"Not enough space at destination: {date_dir}")
+
+                shutil.move(raw_file, new_path)
                 logger.debug(f"Moved {filename} to {date_dir}")
 
             except Exception as e:
