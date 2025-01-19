@@ -2,6 +2,8 @@ import os
 import subprocess
 import logging
 import shutil
+import threading
+import time
 from datetime import datetime
 import signal
 import glob
@@ -61,14 +63,12 @@ class StreamRecorder:
             logger.error(f"Failed to start recording for {self.name}: {str(e)}")
 
     def _start_file_mover(self):
-        """Start a thread to periodically move completed segments to date directories"""
-        import threading
+        # Start a thread to periodically move completed segments to date directories
         self.mover_thread = threading.Thread(target=self._move_segments, daemon=True)
         self.mover_thread.start()
 
     def _move_segments(self):
-        """Periodically move completed segments to their date-based directories"""
-        import time
+        # Periodically move completed segments to their date-based directories
         while self.recording:
             try:
                 self._process_raw_segments()
@@ -77,7 +77,7 @@ class StreamRecorder:
             time.sleep(30)  # Check every 30 seconds
 
     def _process_raw_segments(self):
-        """Move completed segments to their date directories"""
+        # Move completed segments to their date directories
         current_time = datetime.now()
         raw_files = glob.glob(f"{self.raw_dir}/*.mkv")
 

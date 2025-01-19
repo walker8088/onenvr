@@ -22,7 +22,7 @@ The camera video streams are saved in 5 minute files (to prevent long periods of
 6. Time to run concatenation can be set by updating `concatenation_time: "02:00"` to desired time. (Optional)
 7. Time to run deletion of old recordings can be set by updating `deletion_time: "01:00"` to desired time. (Optional)
 8. For password protected RTSP streams, you need pass the argument in RTSP URL configuration. The URL might vary based on your camera. E.g., `rtsp://user:password@camera-ip/live/stream_01`
-9. Logs can be accessed in native docker logs with command `docker logs onenvr`.
+9. Logs can be accessed in native docker logs with command `docker logs onenvr`. For detailed logs, use docker environment variable `DEBUG=true` in `docker run` command or `docker-compose.yml` file.
 
 ## Build image using Dockerfile
 

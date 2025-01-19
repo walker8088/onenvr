@@ -21,6 +21,7 @@ class NVRSystem:
 
     def setup_recorders(self):
         # First ensure base storage directories exist
+        logger.debug(f"Creating base directories for all cameras")
         for camera_config in self.config['cameras']:
             camera_name = camera_config['name']
             base_dir = f"/storage/{camera_name}"
@@ -35,6 +36,7 @@ class NVRSystem:
         self.video_manager.set_recorders(self.recorders)
 
     def setup_schedules(self):
+        logger.debug(f"Setting up schedules for all cameras")
         if self.config['concatenation']:
             # Add a delay to ensure all segments are moved before concatenation
             concat_time = datetime.strptime(self.config['concatenation_time'], '%H:%M')
@@ -57,8 +59,8 @@ class NVRSystem:
         schedule.every(5).minutes.do(self.process_all_segments)
 
     def process_all_segments(self):
-        """Process any completed segments for all cameras"""
-        logger.info("Processing completed segments for all cameras")
+        # Process any completed segments for all cameras
+        logger.debug(f"Processing completed segments for all cameras")
         for recorder in self.recorders.values():
             try:
                 recorder._process_raw_segments()
@@ -66,7 +68,7 @@ class NVRSystem:
                 logger.error(f"Error processing segments for {recorder.name}: {str(e)}")
 
     def start(self):
-        logger.info("Starting OneNVR system")
+        logger.info(f"Starting OneNVR system")
         for recorder in self.recorders.values():
             recorder.start()
 
@@ -83,7 +85,7 @@ class NVRSystem:
                 time.sleep(5)
 
     def stop(self):
-        logger.info("Stopping OneNVR system")
+        logger.info(f"Stopping OneNVR system")
         for recorder in self.recorders.values():
             recorder.stop()
 

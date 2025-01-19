@@ -8,21 +8,21 @@ logger = logging.getLogger(__name__)
 
 class VideoManager:
     def __init__(self, retention_days):
-        """Initialize VideoManager with retention policy."""
+        # Initialize VideoManager with retention policy.
         self.retention_days = retention_days
         self.recorders = {}
 
     def set_recorders(self, recorders):
-        """Store reference to recorder instances"""
+        # Store reference to recorder instances
         self.recorders = recorders
 
     def _get_recorder(self, camera_name):
-        """Get recorder instance for a camera"""
+        # Get recorder instance for a camera
         return self.recorders.get(camera_name)
 
     def concatenate_daily_videos(self, camera_name):
-        today = datetime.now().strftime('%Y-%m-%d')
-        date_dir = f"/storage/{camera_name}/{today}"
+        yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+        date_dir = f"/storage/{camera_name}/{yesterday}"
         raw_dir = f"/storage/{camera_name}/raw"
 
         # First, ensure all completed segments are moved
@@ -31,10 +31,10 @@ class VideoManager:
             recorder._process_raw_segments()
 
         input_pattern = f"{date_dir}/*.mkv"
-        output_file = f"{date_dir}/daily_{today}.mkv"
+        output_file = f"{date_dir}/daily_{yesterday}.mkv"
 
         if not glob.glob(input_pattern):
-            logger.info(f"No videos to concatenate for {camera_name} on {today}")
+            logger.info(f"No videos to concatenate for {camera_name} on {yesterday}")
             return
 
         try:
@@ -59,7 +59,7 @@ class VideoManager:
                 output_file
             ]
             subprocess.run(cmd, check=True)
-            logger.info(f"Successfully concatenated videos for {camera_name} on {today}")
+            logger.info(f"Successfully concatenated videos for {camera_name} on {yesterday}")
 
             # Clean up individual segments
             for video in glob.glob(input_pattern):
