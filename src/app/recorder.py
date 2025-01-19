@@ -59,6 +59,7 @@ class StreamRecorder:
             self.recording = True
             # Start the file mover thread
             self._start_file_mover()
+            logger.info(f"Recording initiated for camera: {self.name}")
         except Exception as e:
             logger.error(f"Failed to start recording for {self.name}: {str(e)}")
 
