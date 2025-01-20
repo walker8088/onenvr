@@ -51,7 +51,7 @@ class VideoManager:
                 '-n', '7',
                 'ffmpeg',
                 '-hide_banner', '-y',
-                '-loglevel', 'warning',
+                '-loglevel', 'error',
                 '-f', 'concat',
                 '-safe', '0',
                 '-i', 'filelist.txt',
@@ -73,7 +73,7 @@ class VideoManager:
                 os.remove('filelist.txt')
 
     def cleanup_old_recordings(self):
-        cutoff_date = datetime.now() - timedelta(days=self.retention_days)
+        cutoff_date = (datetime.now() - timedelta(days=self.retention_days)).strftime('%Y-%m-%d')
         logger.info(f"Cleaning up recordings older than {cutoff_date}")
 
         for camera_dir in glob.glob('/storage/*/'):
