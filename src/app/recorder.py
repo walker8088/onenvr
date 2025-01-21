@@ -118,7 +118,10 @@ class StreamRecorder:
     def stop(self):
         if self.process:
             self.process.send_signal(signal.SIGTERM)
-            self.process.wait()
+            try:
+                self.process.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                self.process.kill()
             self.process = None
             self.recording = False
             # Process any remaining files
