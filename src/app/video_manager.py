@@ -73,7 +73,7 @@ class VideoManager:
                 os.remove('filelist.txt')
 
     def cleanup_old_recordings(self):
-        cutoff_date = datetime.now() - timedelta(days=self.retention_days)
+        cutoff_date = (datetime.now() - timedelta(days=self.retention_days)).replace(hour=0, minute=0, second=0, microsecond=0)
         logger.info(f"Cleaning up recordings older than {cutoff_date.strftime('%Y-%m-%d')}")
 
         for camera_dir in glob.glob('/storage/*/'):
