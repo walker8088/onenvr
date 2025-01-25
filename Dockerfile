@@ -25,7 +25,7 @@ VOLUME ["/config", "/storage"]
 EXPOSE 5000
 
 # Run the application
-CMD python /app/main.py
+ENTRYPOINT ["/entrypoint.sh"]
 
 # Add healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 CMD python /app/healthcheck.py

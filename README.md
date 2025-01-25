@@ -5,7 +5,7 @@
 [![Size](https://img.shields.io/docker/image-size/cyb3rdoc/onenvr/latest?sort=semver&labelColor-555555&color-007EC6&style=flat-square)](https://hub.docker.com/r/cyb3rdoc/onenvr)
 [![Pulls](https://img.shields.io/docker/pulls/cyb3rdoc/onenvr?labelColor-555555&color-007EC6&style=flat-square)](https://hub.docker.com/r/cyb3rdoc/onenvr)
 
-This is a simple and lightweight Network Video Recorder (NVR) that is designed to run on cheap hardware, such as a Raspberry Pi with a hard drive. 24/7 video streams from network cameras are saved. Recorded files can be browsed through native web interface (http://onenvr_ip:port) or using [filebrowser](https://github.com/filebrowser/filebrowser).
+This is a simple and lightweight Network Video Recorder (NVR) that is designed to run on cheap hardware, such as a Raspberry Pi with a hard drive. 24/7 video streams from network cameras are saved. Recorded files can be browsed through native web interface (http://onenvr_ip:port).
 
 The project is deliberately bare-bones, configuration is done through `config.yaml` file and deployed using docker containerization.
 
@@ -36,7 +36,7 @@ docker build -t "${USER?}/onenvr:${TIMESTAMP}" .
 
 Run onenvr docker container:
 ```
-docker run -d --name onenvr -v /path/to/onenvr/config:/config -v /path/to/onenvr/storage:/storage your_username/onenvr:YYYYMMDD-HHMM
+docker run -d --name onenvr -p 80:5000 -v /path/to/onenvr/config:/config -v /path/to/onenvr/storage:/storage your_username/onenvr:YYYYMMDD-HHMM
 ```
 
 Mount following volumes to update camera settings and access or backup stored video files.
