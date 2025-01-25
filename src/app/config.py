@@ -5,10 +5,21 @@ from schema import config_schema
 
 def setup_logging():
     level = logging.DEBUG if os.environ.get('DEBUG') == 'true' else logging.INFO
+    # Clear existing handlers
+    root_logger = logging.getLogger()
+    root_logger.handlers = []
+    # Configure logging
     logging.basicConfig(
         level=level,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.StreamHandler()
+        ]
     )
+    # Specifically suppress werkzeug logs
+    werkzeug_logger = logging.getLogger('werkzeug')
+    werkzeug_logger.setLevel(logging.WARNING)
+
     logger = logging.getLogger(__name__)
     return logger
 

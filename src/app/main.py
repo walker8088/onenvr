@@ -1,23 +1,30 @@
 import os
 import schedule
 import time
+import threading
 from datetime import datetime, timedelta
 from config import load_config, setup_logging
 from recorder import StreamRecorder
 from video_manager import VideoManager
+from web_interface import create_web_server
 import logging
 import glob
 
+# Configure logging
+setup_logging()
 logger = logging.getLogger(__name__)
 
 class NVRSystem:
     def __init__(self):
-        setup_logging()
+        self.logger = logging.getLogger(__name__)
+        self.logger.info("Initializing OneNVR system")
         self.config = load_config()
         self.recorders = {}
         self.video_manager = VideoManager(self.config['retention_days'])
+        self.web_app = None
         self.setup_recorders()
         self.setup_schedules()
+        self.start_web_server()
 
     def setup_recorders(self):
         # First ensure base storage directories exist
@@ -68,7 +75,7 @@ class NVRSystem:
                 logger.error(f"Error processing segments for {recorder.name}: {str(e)}")
 
     def start(self):
-        logger.info(f"Starting OneNVR system")
+        logger.info(f"Starting OneNVR recorders")
         for recorder in self.recorders.values():
             recorder.start()
 
@@ -110,6 +117,21 @@ class NVRSystem:
             logger.info(f"Concatenating videos for {camera_name}")
             self.video_manager.concatenate_daily_videos(camera_name)
             time.sleep(10)
+
+    def start_web_server(self):
+        self.web_app = create_web_server()
+
+        server_thread = threading.Thread(
+            target=self.web_app.run,
+            kwargs={
+                'host': '0.0.0.0',
+                'port': 5000,
+                'threaded': True
+            },
+            daemon=True
+        )
+        server_thread.start()
+        logger.info(f"OneNVR web server started")
 
 if __name__ == "__main__":
     try:

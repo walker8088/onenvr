@@ -21,6 +21,9 @@ COPY ./src /
 # Create volumes
 VOLUME ["/config", "/storage"]
 
+# Expose web interface port
+EXPOSE 5000
+
 # Run the application
 CMD python /app/main.py
 

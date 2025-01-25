@@ -1,6 +1,8 @@
 import os
 import glob
 import sys
+import urllib.request
+import urllib.error
 from datetime import datetime, timedelta
 
 def check_health():
@@ -14,7 +16,17 @@ def check_health():
         print("Config directory not accessible")
         return False
 
-    # Check 3: Check for recent recordings in the last 2 minutes
+    # Check 3: # Check for web server connection and response
+    try:
+        with urllib.request.urlopen('http://localhost:5000/', timeout=5) as response:
+            if response.getcode() != 200:
+                print(f"Web server returned unexpected status: {response.getcode()}")
+                return False
+    except urllib.error.URLError as e:
+        print(f"Web server connection failed: {str(e.reason)}")
+        return False
+
+    # Check 4: Check for recent recordings in the last 2 minutes
     now = datetime.now()
     recent_files_found = False
 

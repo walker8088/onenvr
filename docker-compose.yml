@@ -1,0 +1,14 @@
+services:
+  onenvr:
+    container_name: onenvr
+    hostname: onenvr
+    image: cyb3rdoc/onenvr:latest
+    ports:
+      - "80:5000"
+    volumes:
+      - /path/to/onenvr/config:/config
+      - /path/to/onenvr/storage:/storage
+    environment:
+      - TZ=America/New_York
+      - DEBUG=false
+    restart: unless-stopped

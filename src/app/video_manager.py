@@ -31,7 +31,7 @@ class VideoManager:
             recorder._process_raw_segments()
 
         input_pattern = f"{date_dir}/*.mkv"
-        output_file = f"{date_dir}/daily_{yesterday}.mkv"
+        output_file = f"{date_dir}/{camera_name}_{yesterday}.mkv"
 
         if not glob.glob(input_pattern):
             logger.info(f"No videos to concatenate for {camera_name} on {yesterday}")
@@ -41,7 +41,7 @@ class VideoManager:
             # Create file list for ffmpeg
             with open('filelist.txt', 'w') as f:
                 for video in sorted(glob.glob(input_pattern)):
-                    if 'daily_' not in video:
+                    if f"{camera_name}_" not in video:
                         f.write(f"file '{os.path.abspath(video)}'\n")
 
             # Concatenate videos
@@ -63,7 +63,7 @@ class VideoManager:
 
             # Clean up individual segments
             for video in glob.glob(input_pattern):
-                if 'daily_' not in video:
+                if f"{camera_name}_" not in video:
                     os.remove(video)
 
         except Exception as e:
