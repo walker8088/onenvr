@@ -75,15 +75,18 @@ class VideoManager:
     def cleanup_old_recordings(self):
         cutoff_date = datetime.now() - timedelta(days=self.retention_days + 1)
         logger.info(f"Cleaning up recordings from {cutoff_date.strftime('%Y-%m-%d')} and earlier")
-
+        found_old_recordings = False
         for camera_dir in glob.glob('/storage/*/'):
             for date_dir in glob.glob(f"{camera_dir}*/"):
                 try:
                     dir_date = datetime.strptime(os.path.basename(date_dir.rstrip('/')), '%Y-%m-%d')
                     if dir_date < cutoff_date:
+                        found_old_recordings = True
                         for file in glob.glob(f"{date_dir}*"):
                             os.remove(file)
                         os.rmdir(date_dir)
                         logger.info(f"Removed old recordings in {date_dir}")
                 except ValueError:
                     continue
+        if not found_old_recordings:
+            logger.info(f"No recordings found from {cutoff_date.strftime('%Y-%m-%d')} or earlier to delete")

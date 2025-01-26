@@ -57,10 +57,13 @@ class NVRSystem:
             schedule.every().day.at(self.config['concatenation_time']).do(
                 self.concatenate_all_cameras
             )
+        else:
+            logger.info("Concatenation is disabled in the configuration")
 
         schedule.every().day.at(self.config['deletion_time']).do(
             self.video_manager.cleanup_old_recordings
         )
+        logger.info(f"Deletion of recordings older than {self.config['retention_days']} days scheduled at {self.config['deletion_time']} every day")
 
         # Add periodic segment processing
         schedule.every(5).minutes.do(self.process_all_segments)
