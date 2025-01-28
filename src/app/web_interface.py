@@ -12,56 +12,29 @@ HTML_TEMPLATES = {
         <head>
             <title>OneNVR - Cameras</title>
             <style>
-                body {
-                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                    margin: 20px;
-                    background-color: #f0f2f5;
-                }
-                .container {
-                    max-width: 800px;
-                    margin: 0 auto;
-                    background: white;
-                    padding: 30px;
-                    border-radius: 8px;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                }
-                h1 {
-                    color: #1a73e8;
-                    margin-bottom: 25px;
-                }
-                ul {
-                    list-style: none;
-                    padding: 0;
-                    margin: 0;
-                }
-                li {
-                    margin: 10px 0;
-                    padding: 12px;
-                    background: #f8f9fa;
-                    border-radius: 4px;
-                    transition: background 0.2s;
-                }
-                li:hover {
-                    background: #e9ecef;
-                }
-                a {
-                    color: #1a73e8;
-                    text-decoration: none;
-                    font-weight: 500;
-                }
-                a:hover {
-                    text-decoration: underline;
-                }
+                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f0f2f5; }
+                .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                h1 { color: #1a73e8; margin-bottom: 25px; }
+                ul { list-style: none; padding: 0; margin: 0; }
+                li { margin: 10px 0; padding: 12px; background: #f8f9fa; border-radius: 4px; transition: background 0.2s; }
+                li:hover { background: #e9ecef; }
+                a { color: #1a73e8; text-decoration: none; font-weight: 500; }
+                a:hover { text-decoration: underline; }
+                .empty-message { text-align: center; color: #666; padding: 20px; }
             </style>
         </head>
         <body>
             <div class="container">
                 <h1>Cameras</h1>
+                {% if cameras %}
                 <ul>
                     {% for camera in cameras %}
                     <li><a href="/{{ camera }}/">{{ camera }}</a></li>
                     {% endfor %}
                 </ul>
+                {% else %}
+                <div class="empty-message">No cameras configured yet</div>
+                {% endif %}
             </div>
         </body>
         </html>
@@ -73,61 +46,18 @@ HTML_TEMPLATES = {
         <head>
             <title>{{ camera }} - Dates</title>
             <style>
-                body {
-                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                    margin: 20px;
-                    background-color: #f0f2f5;
-                }
-                .container {
-                    max-width: 800px;
-                    margin: 0 auto;
-                    background: white;
-                    padding: 30px;
-                    border-radius: 8px;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                }
-                .breadcrumb {
-                    color: #666;
-                    margin-bottom: 20px;
-                    font-size: 0.95em;
-                }
-                .breadcrumb a {
-                    color: #1a73e8;
-                    text-decoration: none;
-                }
-                .breadcrumb a:hover {
-                    text-decoration: underline;
-                }
-                h1 {
-                    color: #1a73e8;
-                    margin-bottom: 25px;
-                }
-                ul {
-                    list-style: none;
-                    padding: 0;
-                    margin: 0;
-                    display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-                    gap: 10px;
-                }
-                li {
-                    padding: 12px;
-                    background: #f8f9fa;
-                    border-radius: 4px;
-                    text-align: center;
-                    transition: background 0.2s;
-                }
-                li:hover {
-                    background: #e9ecef;
-                }
-                a {
-                    color: #1a73e8;
-                    text-decoration: none;
-                    font-weight: 500;
-                }
-                a:hover {
-                    text-decoration: underline;
-                }
+                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f0f2f5; }
+                .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                .breadcrumb { color: #666; margin-bottom: 20px; font-size: 0.95em; }
+                .breadcrumb a { color: #1a73e8; text-decoration: none; }
+                .breadcrumb a:hover { text-decoration: underline; }
+                h1 { color: #1a73e8; margin-bottom: 25px; }
+                ul { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+                li { padding: 12px; background: #f8f9fa; border-radius: 4px; text-align: center; transition: background 0.2s; }
+                li:hover { background: #e9ecef; }
+                a { color: #1a73e8; text-decoration: none; font-weight: 500; }
+                a:hover { text-decoration: underline; }
+                .empty-message { text-align: center; color: #666; padding: 20px; }
             </style>
         </head>
         <body>
@@ -138,11 +68,15 @@ HTML_TEMPLATES = {
                 </div>
 
                 <h1>{{ camera }} - Dates</h1>
+                {% if dates %}
                 <ul>
                     {% for date in dates %}
                     <li><a href="/{{ camera }}/{{ date }}/">{{ date }}</a></li>
                     {% endfor %}
                 </ul>
+                {% else %}
+                <div class="empty-message">No recordings available yet</div>
+                {% endif %}
             </div>
         </body>
         </html>
@@ -154,64 +88,18 @@ HTML_TEMPLATES = {
         <head>
             <title>{{ camera }} - {{ date }}</title>
             <style>
-                body {
-                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                    margin: 20px;
-                    background-color: #f0f2f5;
-                }
-                .container {
-                    max-width: 1000px;
-                    margin: 0 auto;
-                    background: white;
-                    padding: 30px;
-                    border-radius: 8px;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                }
-                .breadcrumb {
-                    color: #666;
-                    margin-bottom: 20px;
-                    font-size: 0.95em;
-                }
-                .breadcrumb a {
-                    color: #1a73e8;
-                    text-decoration: none;
-                }
-                .breadcrumb a:hover {
-                    text-decoration: underline;
-                }
-                h1 {
-                    color: #1a73e8;
-                    margin-bottom: 25px;
-                }
-                .video-grid {
-                    list-style: none;
-                    padding: 0;
-                    margin: 0;
-                    display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-                    gap: 15px;
-                }
-                .video-item {
-                    padding: 15px;
-                    background: #f8f9fa;
-                    border-radius: 6px;
-                    transition: all 0.2s ease;
-                    text-align: center;
-                }
-                .video-item:hover {
-                    background: #e9ecef;
-                    transform: translateY(-2px);
-                }
-                .video-link {
-                    color: #1a73e8;
-                    text-decoration: none;
-                    display: block;
-                }
-                .timecode {
-                    color: #666;
-                    font-size: 0.85em;
-                    margin-top: 8px;
-                }
+                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f0f2f5; }
+                .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                .breadcrumb { color: #666; margin-bottom: 20px; font-size: 0.95em; }
+                .breadcrumb a { color: #1a73e8; text-decoration: none; }
+                .breadcrumb a:hover { text-decoration: underline; }
+                h1 { color: #1a73e8; margin-bottom: 25px; }
+                .video-grid { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
+                .video-item { padding: 15px; background: #f8f9fa; border-radius: 6px; transition: all 0.2s ease; text-align: center; }
+                .video-item:hover { background: #e9ecef; transform: translateY(-2px); }
+                .video-link { color: #1a73e8; text-decoration: none; display: block; }
+                .timecode { color: #666; font-size: 0.85em; margin-top: 8px; }
+                .empty-message { text-align: center; color: #666; padding: 20px; }
             </style>
         </head>
         <body>
@@ -223,89 +111,32 @@ HTML_TEMPLATES = {
                 </div>
 
                 <h1>{{ camera }} - {{ date }}</h1>
+                {% if videos %}
                 <ul class="video-grid">
                     {% for video in videos %}
                     <li class="video-item">
                         <a href="/{{ camera }}/{{ date }}/{{ video }}" class="video-link">
-                            <div style="font-weight: 500;">{{ video.split('_')[1].split('.')[0]|replace('-', ':') }}</div>
+                            <div style="font-weight: 500;">
+                                {% if video.endswith('.mkv') %}
+                                    {% if video.startswith(camera + '_') %}
+                                        {{ video.split('_')[1].split('.')[0] }}
+                                    {% elif video.count('-') == 2 and video.count('_') == 1 %}
+                                        {{ video.split('_')[1].split('.')[0] }}
+                                    {% else %}
+                                        {{ video.split('.')[0] }}
+                                    {% endif %}
+                                {% else %}
+                                    {{ video }}
+                                {% endif %}
+                            </div>
                             <div class="timecode">MKV File</div>
                         </a>
                     </li>
                     {% endfor %}
                 </ul>
-            </div>
-        </body>
-        </html>
-    ''',
-
-    'video_player': '''
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>{{ camera }} - {{ date }} - {{ video }}</title>
-            <style>
-                body {
-                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                    margin: 20px;
-                    background-color: #f0f2f5;
-                }
-                .container {
-                    max-width: 1000px;
-                    margin: 0 auto;
-                    background: white;
-                    padding: 30px;
-                    border-radius: 8px;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                }
-                .breadcrumb {
-                    color: #666;
-                    margin-bottom: 20px;
-                    font-size: 0.95em;
-                }
-                .breadcrumb a {
-                    color: #1a73e8;
-                    text-decoration: none;
-                }
-                .breadcrumb a:hover {
-                    text-decoration: underline;
-                }
-                .back-link {
-                    display: inline-block;
-                    margin-bottom: 20px;
-                    color: #1a73e8;
-                    text-decoration: none;
-                }
-                .back-link:hover {
-                    text-decoration: underline;
-                }
-                .video-container {
-                    margin-top: 20px;
-                }
-                video {
-                    width: 100%;
-                    max-width: 800px;
-                    border-radius: 4px;
-                    background: black;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="breadcrumb">
-                    <a href="/">Cameras</a> &gt;
-                    <a href="/{{ camera }}/">{{ camera }}</a> &gt;
-                    <a href="/{{ camera }}/{{ date }}/">{{ date }}</a> &gt;
-                    {{ video.split('_')[1].split('.')[0]|replace('-', ':') }}
-                </div>
-
-                <a href="/{{ camera }}/{{ date }}/" class="back-link">&larr; Back to list</a>
-
-                <div class="video-container">
-                    <video controls preload="metadata">
-                        <source src="/video/{{ camera }}/{{ date }}/{{ video }}">
-                        Your browser does not support this video format.
-                    </video>
-                </div>
+                {% else %}
+                <div class="empty-message">No recordings available for this date yet</div>
+                {% endif %}
             </div>
         </body>
         </html>
