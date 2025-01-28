@@ -227,7 +227,7 @@ HTML_TEMPLATES = {
                     {% for video in videos %}
                     <li class="video-item">
                         <a href="/{{ camera }}/{{ date }}/{{ video }}" class="video-link">
-                            <div style="font-weight: 500;">{{ video.split('.')[0]|replace('-', ':') }}</div>
+                            <div style="font-weight: 500;">{{ video.split('_')[1].split('.')[0]|replace('-', ':') }}</div>
                             <div class="timecode">MKV File</div>
                         </a>
                     </li>
@@ -295,7 +295,7 @@ HTML_TEMPLATES = {
                     <a href="/">Cameras</a> &gt;
                     <a href="/{{ camera }}/">{{ camera }}</a> &gt;
                     <a href="/{{ camera }}/{{ date }}/">{{ date }}</a> &gt;
-                    {{ video.split('.')[0]|replace('-', ':') }}
+                    {{ video.split('_')[1].split('.')[0]|replace('-', ':') }}
                 </div>
 
                 <a href="/{{ camera }}/{{ date }}/" class="back-link">&larr; Back to list</a>

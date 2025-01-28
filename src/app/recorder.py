@@ -25,8 +25,8 @@ class StreamRecorder:
             return
 
         logger.info(f"Starting recording for camera: {self.name}")
-        # Record to raw directory with just timestamp filename
-        output_pattern = f"{self.raw_dir}/%H-%M-%S.mkv"
+        # Record to raw directory with date and time in filename
+        output_pattern = f"{self.raw_dir}/%Y-%m-%d_%H-%M-%S.mkv"
 
         # Ensure raw directory exists
         logger.debug(f"Creating raw directory for {self.name}")
@@ -84,20 +84,22 @@ class StreamRecorder:
 
         for raw_file in raw_files:
             try:
-                # Get file modification time
+                # Get file modification time to check if file is complete
                 mod_time = datetime.fromtimestamp(os.path.getmtime(raw_file))
 
                 # If file is still being written to (modified in last interval), skip it
                 if (current_time - mod_time).total_seconds() < self.interval:
                     continue
 
+                # Get date from filename
+                filename = os.path.basename(raw_file)
+                date_str = filename.split('_')[0]
+
                 # Create date directory if it doesn't exist
-                date_str = mod_time.strftime('%Y-%m-%d')
                 date_dir = f"/storage/{self.name}/{date_str}"
                 os.makedirs(date_dir, exist_ok=True)
 
                 # Move file to date directory
-                filename = os.path.basename(raw_file)
                 new_path = os.path.join(date_dir, filename)
 
                 # Verify read access to source and write access to destination
