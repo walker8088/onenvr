@@ -116,19 +116,7 @@ HTML_TEMPLATES = {
                     {% for video in videos %}
                     <li class="video-item">
                         <a href="/{{ camera }}/{{ date }}/{{ video }}" class="video-link">
-                            <div style="font-weight: 500;">
-                                {% if video.endswith('.mkv') %}
-                                    {% if video.startswith(camera + '_') %}
-                                        {{ video.split('_')[1].split('.')[0] }}
-                                    {% elif video.count('-') == 2 and video.count('_') == 1 %}
-                                        {{ video.split('_')[1].split('.')[0] }}
-                                    {% else %}
-                                        {{ video.split('.')[0] }}
-                                    {% endif %}
-                                {% else %}
-                                    {{ video }}
-                                {% endif %}
-                            </div>
+                            <div style="font-weight: 500;">{{ video }}</div>
                             <div class="timecode">MKV File</div>
                         </a>
                     </li>
@@ -137,6 +125,47 @@ HTML_TEMPLATES = {
                 {% else %}
                 <div class="empty-message">No recordings available for this date yet</div>
                 {% endif %}
+            </div>
+        </body>
+        </html>
+    ''',
+
+    'video_player': '''
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>{{ camera }} - {{ date }} - {{ video }}</title>
+            <style>
+                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f0f2f5; }
+                .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                .breadcrumb { color: #666; margin-bottom: 20px; font-size: 0.95em; }
+                .breadcrumb a { color: #1a73e8; text-decoration: none; }
+                .breadcrumb a:hover { text-decoration: underline; }
+                h1 { color: #1a73e8; margin-bottom: 25px; }
+                .back-link { display: inline-block; margin-bottom: 20px; color: #1a73e8; text-decoration: none; font-weight: 500; }
+                .back-link:hover { text-decoration: underline; }
+                .video-container { margin-top: 20px; display: flex; justify-content: center; }
+                video { width: 100%; max-width: 800px; border-radius: 4px; background: black; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="breadcrumb">
+                    <a href="/">Cameras</a> &gt;
+                    <a href="/{{ camera }}/">{{ camera }}</a> &gt;
+                    <a href="/{{ camera }}/{{ date }}/">{{ date }}</a> &gt;
+                    {{ video }}
+                </div>
+
+                <a href="/{{ camera }}/{{ date }}/" class="back-link">&larr; Back to list</a>
+
+                <h1>{{ video }}</h1>
+                <div class="video-container">
+                    <video controls preload="metadata">
+                        <source src="/video/{{ camera }}/{{ date }}/{{ video }}">
+                        Your browser does not support this video format.
+                    </video>
+                </div>
             </div>
         </body>
         </html>
