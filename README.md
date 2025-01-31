@@ -1,11 +1,13 @@
-# OneNVR - One Network Video Recorder for All Your Cameras
+# OneNVR - One Network Video Recorder
 
 [![Repo](https://img.shields.io/badge/Docker-Repo-007EC6?labelColor-555555&color-007EC6&logo=docker&logoColor=fff&style=flat-square)](https://hub.docker.com/r/cyb3rdoc/onenvr)
 [![Version](https://img.shields.io/docker/v/cyb3rdoc/onenvr/latest?labelColor-555555&color-007EC6&style=flat-square)](https://hub.docker.com/r/cyb3rdoc/onenvr)
 [![Size](https://img.shields.io/docker/image-size/cyb3rdoc/onenvr/latest?sort=semver&labelColor-555555&color-007EC6&style=flat-square)](https://hub.docker.com/r/cyb3rdoc/onenvr)
 [![Pulls](https://img.shields.io/docker/pulls/cyb3rdoc/onenvr?labelColor-555555&color-007EC6&style=flat-square)](https://hub.docker.com/r/cyb3rdoc/onenvr)
 
-This is a simple and lightweight Network Video Recorder (NVR) that is designed to run on cheap hardware, such as a Raspberry Pi with a hard drive. 24/7 video streams from network cameras are saved. Recorded files can be browsed through native web interface (http://onenvr_ip:port).
+This is a simple and lightweight Network Video Recorder (NVR) that is designed to run on cheap hardware, such as a Raspberry Pi with a hard drive. 24/7 video streams from network cameras are saved. Recorded files can be browsed through native web interface.
+
+![Web Interface](/images/web-interface.png)
 
 The project is deliberately bare-bones, configuration is done through `config.yaml` file and deployed using docker containerization.
 
