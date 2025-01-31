@@ -1,6 +1,6 @@
-from datetime import datetime
 import os
 import logging
+from datetime import datetime
 from flask import Flask, send_from_directory, render_template_string, abort
 
 logger = logging.getLogger(__name__)
@@ -89,17 +89,21 @@ HTML_TEMPLATES = {
             <title>{{ camera }} - {{ date }}</title>
             <style>
                 body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f0f2f5; }
-                .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
                 .breadcrumb { color: #666; margin-bottom: 20px; font-size: 0.95em; }
                 .breadcrumb a { color: #1a73e8; text-decoration: none; }
                 .breadcrumb a:hover { text-decoration: underline; }
                 h1 { color: #1a73e8; margin-bottom: 25px; }
-                .video-grid { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
-                .video-item { padding: 15px; background: #f8f9fa; border-radius: 6px; transition: all 0.2s ease; text-align: center; }
-                .video-item:hover { background: #e9ecef; transform: translateY(-2px); }
+                .video-grid { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; }
+                .video-item { padding: 20px; background: #f8f9fa; border-radius: 8px; transition: all 0.2s ease; border: 1px solid #e9ecef; }
+                .video-item:hover { background: #e9ecef; transform: translateY(-2px); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
                 .video-link { color: #1a73e8; text-decoration: none; display: block; }
-                .timecode { color: #666; font-size: 0.85em; margin-top: 8px; }
-                .empty-message { text-align: center; color: #666; padding: 20px; }
+                .video-title {font-weight: 600; font-size: 1.1em; margin-bottom: 8px; color: #2c3e50; }
+                .timestamp { color: #666; font-size: 0.9em; margin-bottom: 8px; }
+                .filename { color: #888; font-size: 0.8em; word-break: break-all; font-family: monospace; background: #fff; padding: 4px; border-radius: 4px; }
+                .empty-message {  text-align: center;  color: #666;  padding: 40px; background: #f8f9fa; border-radius: 8px; }
+                .video-icon { display: inline-block; width: 24px; height: 24px; margin-right: 8px; vertical-align: middle; }
+                .meta-info { display: flex; align-items: center; margin-bottom: 8px; }
             </style>
         </head>
         <body>
@@ -116,8 +120,17 @@ HTML_TEMPLATES = {
                     {% for video in videos %}
                     <li class="video-item">
                         <a href="/{{ camera }}/{{ date }}/{{ video }}" class="video-link">
-                            <div style="font-weight: 500;">{{ video }}</div>
-                            <div class="timecode">MKV File</div>
+                            <div class="meta-info">
+                                <svg class="video-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                                <div class="video-title">Recording {{ loop.index }}</div>
+                            </div>
+                            <div class="timestamp">
+                                {% set time = video.split('_')[1].split('.')[0].replace('-', ':') %}
+                                {{ time }}
+                            </div>
+                            <div class="filename">{{ video }}</div>
                         </a>
                     </li>
                     {% endfor %}
