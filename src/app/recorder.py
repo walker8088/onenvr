@@ -7,6 +7,8 @@ import time
 from datetime import datetime
 import signal
 import glob
+import socket
+import urllib.parse
 
 logger = logging.getLogger(__name__)
 
@@ -19,9 +21,31 @@ class StreamRecorder:
         self.process = None
         self.recording = False
         self.raw_dir = f"/storage/{self.name}/raw"
+        self.last_restart_attempt = 0
+        self.restart_cooldown = 30
+
+    def check_camera_connectivity(self):
+        try:
+            parsed = urllib.parse.urlparse(self.rtsp_url)
+            socket.create_connection((parsed.hostname, parsed.port or 554), timeout=3)
+            return True
+        except Exception:
+            return False
 
     def start(self):
         if self.recording:
+            return
+
+        max_retries = 5
+        retry_delay = 5
+
+        for attempt in range(max_retries):
+            if self.check_camera_connectivity():
+                break
+            logger.warning(f"Waiting for camera {self.name} to be reachable (attempt {attempt + 1}/{max_retries})")
+            time.sleep(retry_delay)
+        else:
+            logger.error(f"Failed to connect to camera {self.name} after {max_retries} attempts")
             return
 
         logger.info(f"Starting recording for camera: {self.name}")
@@ -133,4 +157,19 @@ class StreamRecorder:
                 logger.error(f"Error processing remaining segments: {str(e)}")
 
     def is_healthy(self):
-        return self.process is not None and self.process.poll() is None
+        process_healthy = self.process is not None and self.process.poll() is None
+
+        if not process_healthy:
+            current_time = time.time()
+            if current_time - self.last_restart_attempt < self.restart_cooldown:
+                return False
+
+            camera_reachable = self.check_camera_connectivity()
+            if not camera_reachable:
+                logger.warning(f"Camera {self.name} is unreachable")
+                return False
+
+            self.last_restart_attempt = current_time
+            return False
+
+        return True

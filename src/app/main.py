@@ -105,7 +105,7 @@ class NVRSystem:
     def health_check(self):
         for name, recorder in self.recorders.items():
             if not recorder.is_healthy():
-                logger.warning(f"{name} recording is not healthy, restarting...")
+                logger.warning(f"{name} recording is not healthy, attempting restart...")
                 recorder.stop()
                 recorder.start()
 
