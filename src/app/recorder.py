@@ -33,6 +33,9 @@ class StreamRecorder:
             return False
 
     def start(self):
+        if self.process is None or self.process.poll() is not None:
+            self.recording = False
+
         if self.recording:
             return
 
@@ -159,17 +162,27 @@ class StreamRecorder:
     def is_healthy(self):
         process_healthy = self.process is not None and self.process.poll() is None
 
-        if not process_healthy:
-            current_time = time.time()
-            if current_time - self.last_restart_attempt < self.restart_cooldown:
-                return False
+        # If process is healthy, all is well
+        if process_healthy:
+            return True
 
-            camera_reachable = self.check_camera_connectivity()
-            if not camera_reachable:
-                logger.warning(f"Camera {self.name} is unreachable")
-                return False
+        # Process is unhealthy - Check to attempt restart
+        current_time = time.time()
 
-            self.last_restart_attempt = current_time
+        # Do not attempt restart if in cooldown period
+        if current_time - self.last_restart_attempt < self.restart_cooldown:
             return False
 
-        return True
+        # Check if camera is reachable
+        camera_reachable = self.check_camera_connectivity()
+
+        # Update last restart attempt time
+        self.last_restart_attempt = current_time
+
+        # If camera is unreachable, it cannot be restarted
+        if not camera_reachable:
+            logger.warning(f"Camera {self.name} is unreachable")
+            return False
+
+        # Camera is reachable but process is not healthy, indicate it needs restart
+        return False
