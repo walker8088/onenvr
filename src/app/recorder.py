@@ -23,6 +23,7 @@ class StreamRecorder:
         self.raw_dir = f"/storage/{self.name}/raw"
         self.last_restart_attempt = 0
         self.restart_cooldown = 30
+        self.restart_needed = False  # New flag to track if restart is needed
 
     def check_camera_connectivity(self):
         try:
@@ -84,11 +85,13 @@ class StreamRecorder:
                 stderr=subprocess.PIPE
             )
             self.recording = True
+            self.restart_needed = False  # Reset the restart flag after successful start
             # Start the file mover thread
             self._start_file_mover()
             logger.info(f"Recording initiated for camera: {self.name}")
         except Exception as e:
             logger.error(f"Failed to start recording for {self.name}: {str(e)}")
+            self.restart_needed = True  # Mark for restart if start fails
 
     def _start_file_mover(self):
         # Start a thread to periodically move completed segments to date directories
@@ -151,6 +154,7 @@ class StreamRecorder:
                 self.process.wait(timeout=10)
             except subprocess.TimeoutExpired:
                 self.process.kill()
+
             self.process = None
             self.recording = False
             # Process any remaining files
@@ -164,9 +168,10 @@ class StreamRecorder:
 
         # If process is healthy, all is well
         if process_healthy:
+            self.restart_needed = False
             return True
 
-        # Process is unhealthy - Check to attempt restart
+        # Process is unhealthy - Check if restart is needed
         current_time = time.time()
 
         # Do not attempt restart if in cooldown period
@@ -182,7 +187,13 @@ class StreamRecorder:
         # If camera is unreachable, it cannot be restarted
         if not camera_reachable:
             logger.warning(f"Camera {self.name} is unreachable")
+            self.restart_needed = False
             return False
 
-        # Camera is reachable but process is not healthy, indicate it needs restart
+        # Camera is reachable but process is not healthy, mark it for restart
+        self.restart_needed = True
         return False
+
+    def needs_restart(self):
+        # Check if this recorder needs to be restarted
+        return self.restart_needed

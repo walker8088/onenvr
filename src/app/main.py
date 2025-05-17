@@ -68,6 +68,9 @@ class NVRSystem:
         # Add periodic segment processing
         schedule.every(5).minutes.do(self.process_all_segments)
 
+        # Add periodic health check
+        schedule.every(1).minutes.do(self.health_check)
+
     def process_all_segments(self):
         # Process any completed segments for all cameras
         logger.debug(f"Processing completed segments for all cameras")
@@ -84,7 +87,6 @@ class NVRSystem:
 
         while True:
             try:
-                self.health_check()
                 schedule.run_pending()
                 time.sleep(1)
             except KeyboardInterrupt:
@@ -96,18 +98,24 @@ class NVRSystem:
 
     def stop(self):
         logger.info(f"Stopping OneNVR system")
-        for recorder in self.recorders.values():
+        for recorder in self.recorders.items():
             recorder.stop()
 
         # Process any final segments
         self.process_all_segments()
 
     def health_check(self):
+        logger.debug("Running health check")
         for name, recorder in self.recorders.items():
-            if not recorder.is_healthy():
+            # First check if it's healthy
+            is_healthy = recorder.is_healthy()
+
+            if not is_healthy and recorder.needs_restart():
                 logger.warning(f"{name} recording is not healthy, attempting restart...")
                 recorder.stop()
+                time.sleep(2)  # Allow time for cleanup
                 recorder.start()
+                logger.info(f"Restart attempted for {name}")
 
     def concatenate_all_cameras(self):
         # Ensure all segments are processed first
