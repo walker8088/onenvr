@@ -23,13 +23,13 @@ The camera video streams are saved in 5 minute files (to prevent long periods of
 5. Disable concatenation of short video clips to single video file by setting `concatenation: false` in `config.yaml` file. (Optional)
 6. Time to run concatenation can be set by updating `concatenation_time: "02:00"` to desired time. (Optional)
 7. Time to run deletion of old recordings can be set by updating `deletion_time: "01:00"` to desired time. (Optional)
-8. For password protected RTSP streams, you need pass the argument in RTSP URL configuration. The URL might vary based on your camera. E.g., `rtsp://user:password@camera-ip/live/stream_01`
+8. For password protected RTSP camera streams, you need pass the argument in RTSP URL configuration. The URL might vary based on your camera. E.g., `rtsp://user:password@camera-ip/live/stream_01`
 9. Logs can be accessed in native docker logs with command `docker logs onenvr`. For detailed logs, use docker environment variable `DEBUG=true` in `docker run` command or `docker-compose.yml` file.
 
 ## User authentication for web interface
 1. During first use of web interface, you need to set username and password to access the web interface.
 2. Only a server administrator with SSH or direct access to OneNVR mountpoints can reset the password using `Forgot Password` option.
-3. Use password reset key stored at `/storage` mountpoint to set a new password.
+3. Use password reset key stored at `/config` mountpoint to set a new password.
 
 ![Web Interface](/images/web-login.png)
 

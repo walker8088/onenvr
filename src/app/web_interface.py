@@ -67,7 +67,7 @@ HTML_TEMPLATES = {
                     <input type="submit" value="Reset Password">
                     <a href="/login" class="forgot-password">Back to Login</a>
                     {% elif reset_mode %}
-                    <div class="setup-message">A reset key has been generated and saved in the application directory.<br>Check the file: <strong>password_reset.key</strong></div>
+                    <div class="setup-message">A reset key has been generated and saved in the config directory.<br>Check the file: <strong>/config/password_reset.key</strong></div>
                     <div class="form-group">
                         <a href="/reset_password" class="forgot-password">I have the reset key</a>
                     </div>
@@ -304,8 +304,11 @@ HTML_TEMPLATES = {
 def create_web_server():
     app = Flask(__name__)
     base_storage = "/storage"
-    auth_file = os.path.join(base_storage, 'auth.dat')
-    reset_key_file = os.path.join(os.path.dirname(auth_file), 'password_reset.key')
+    config_dir = "/config"
+
+    # Store auth files in persistent config directory
+    auth_file = os.path.join(config_dir, 'auth.dat')
+    reset_key_file = os.path.join(config_dir, 'password_reset.key')
 
     # Set secret key for session
     app.secret_key = secrets.token_hex(16)
@@ -337,8 +340,10 @@ def create_web_server():
         return h.hexdigest() == hash_value
 
     def create_user(username, password):
+        os.makedirs(config_dir, exist_ok=True)
         with open(auth_file, 'w') as f:
             f.write(f"{username}:{hash_password(password)}")
+        logger.info(f"User authentication data saved to {auth_file}")
 
     def check_auth(username, password):
         try:
@@ -361,10 +366,12 @@ def create_web_server():
         # Generate a random reset key
         reset_key = secrets.token_hex(16)
 
-        # Save the reset key to a file
+        # Save the reset key to the config directory
+        os.makedirs(config_dir, exist_ok=True)
         with open(reset_key_file, 'w') as f:
             f.write(reset_key)
 
+        logger.info(f"Password reset key generated and saved to {reset_key_file}")
         return render_template_string(HTML_TEMPLATES['login'], reset_mode=True, error=None, setup_required=False)
 
     @app.route('/reset_password', methods=['GET', 'POST'])
@@ -403,6 +410,7 @@ def create_web_server():
                     if os.path.exists(reset_key_file):
                         os.remove(reset_key_file)
 
+                    logger.info("Password has been reset successfully")
                     success = "Password has been reset successfully. You can now login."
             except FileNotFoundError:
                 error = "Reset key not found. Please request a new password reset."
@@ -425,10 +433,10 @@ def create_web_server():
                 elif len(password) < 6:
                     error = "Password must be at least 6 characters"
                 else:
-                    # Create the user
-                    os.makedirs(os.path.dirname(auth_file), exist_ok=True)
+                    # Create the user in persistent config directory
                     create_user(username, password)
                     session['authenticated'] = True
+                    logger.info(f"Initial user account created for username: {username}")
                     return redirect(url_for('root'))
             else:
                 if check_auth(username, password):
@@ -519,4 +527,5 @@ def create_web_server():
         if 'authenticated' not in session:
             return redirect(url_for('login'))
 
+    logger.info(f"Authentication data will be stored in: {auth_file}")
     return app
