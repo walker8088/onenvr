@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 logger = logging.getLogger(__name__)
 
 def check_ffmpeg_processes():
-    """Check if ffmpeg processes are running for recording"""
+    # Check if ffmpeg processes are running for recording
     try:
         # Use ps command to look for ffmpeg processes
         result = subprocess.run(
@@ -30,6 +30,39 @@ def check_ffmpeg_processes():
     except Exception as e:
         logger.error(f"Error checking ffmpeg processes: {str(e)}")
         return False
+
+def check_individual_camera_health():
+    """Check health of each individual camera"""
+    camera_dirs = glob.glob('/storage/*/raw')
+    if not camera_dirs:
+        print("No camera directories found")
+        return False
+
+    now = datetime.now()
+    healthy_cameras = 0
+
+    for camera_dir in camera_dirs:
+        camera_name = os.path.basename(os.path.dirname(camera_dir))
+        recent_files_found = False
+
+        # Check for recent files in raw directory
+        files = glob.glob(f"{camera_dir}/*.mkv")
+        for f in files:
+            try:
+                mod_time = datetime.fromtimestamp(os.path.getmtime(f))
+                if now - mod_time < timedelta(minutes=3):  # More lenient for health check
+                    recent_files_found = True
+                    break
+            except Exception as e:
+                print(f"Error checking file timestamp for {camera_name}: {str(e)}")
+
+        if recent_files_found:
+            healthy_cameras += 1
+        else:
+            print(f"Camera {camera_name} has no recent recordings")
+
+    # At least one camera should be healthy
+    return healthy_cameras > 0
 
 def check_health():
     # Check 1: Verify storage directory exists and is writable
@@ -62,25 +95,9 @@ def check_health():
         print("No active recording processes found")
         return False
 
-    # Check 5: Check for recent recordings in the last 2 minutes
-    now = datetime.now()
-    recent_files_found = False
-
-    for camera_dir in glob.glob('/storage/*/raw'):
-        files = glob.glob(f"{camera_dir}/*.mkv")
-        for f in files:
-            try:
-                mod_time = datetime.fromtimestamp(os.path.getmtime(f))
-                if now - mod_time < timedelta(minutes=2):
-                    recent_files_found = True
-                    break
-            except Exception as e:
-                print(f"Error checking file timestamp: {str(e)}")
-        if recent_files_found:
-            break
-
-    if not recent_files_found:
-        print("No recent recordings found")
+    # Check 5: Check individual camera health
+    if not check_individual_camera_health():
+        print("No cameras are recording properly")
         return False
 
     return True

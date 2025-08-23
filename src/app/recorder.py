@@ -23,7 +23,8 @@ class StreamRecorder:
         self.raw_dir = f"/storage/{self.name}/raw"
         self.last_restart_attempt = 0
         self.restart_cooldown = 30
-        self.restart_needed = False  # New flag to track if restart is needed
+        self.restart_needed = False
+        self.last_file_time = None
 
     def check_camera_connectivity(self):
         try:
@@ -85,7 +86,8 @@ class StreamRecorder:
                 stderr=subprocess.PIPE
             )
             self.recording = True
-            self.restart_needed = False  # Reset the restart flag after successful start
+            self.restart_needed = False
+            self.last_file_time = datetime.now()
             # Start the file mover thread
             self._start_file_mover()
             logger.info(f"Recording initiated for camera: {self.name}")
@@ -142,6 +144,7 @@ class StreamRecorder:
                     raise IOError(f"Not enough space at destination: {date_dir}")
 
                 shutil.move(raw_file, new_path)
+                self.last_file_time = current_time
                 logger.debug(f"Moved {filename} to {date_dir}")
 
             except Exception as e:
@@ -164,16 +167,23 @@ class StreamRecorder:
                 logger.error(f"Error processing remaining segments: {str(e)}")
 
     def is_healthy(self):
+        current_time = time.time()
+
+        # Check if process is running
         process_healthy = self.process is not None and self.process.poll() is None
 
-        # If process is healthy, all is well
-        if process_healthy:
+        # Check if we're getting recent files (within 2x interval + 30 seconds buffer)
+        files_healthy = True
+        if self.last_file_time:
+            time_since_last_file = (datetime.now() - self.last_file_time).total_seconds()
+            files_healthy = time_since_last_file < (self.interval * 2 + 30)
+
+        # If both process and files are healthy, all is well
+        if process_healthy and files_healthy:
             self.restart_needed = False
             return True
 
-        # Process is unhealthy - Check if restart is needed
-        current_time = time.time()
-
+        # Something is unhealthy - check if restart is needed
         # Do not attempt restart if in cooldown period
         if current_time - self.last_restart_attempt < self.restart_cooldown:
             return False
@@ -181,19 +191,51 @@ class StreamRecorder:
         # Check if camera is reachable
         camera_reachable = self.check_camera_connectivity()
 
-        # Update last restart attempt time
-        self.last_restart_attempt = current_time
-
-        # If camera is unreachable, it cannot be restarted
-        if not camera_reachable:
+        if camera_reachable:
+            # Camera is reachable but recording is unhealthy, mark for restart
+            self.restart_needed = True
+            self.last_restart_attempt = current_time
+            logger.warning(f"Camera {self.name} is unhealthy but reachable - marking for restart")
+            return False
+        else:
+            # Camera is unreachable, cannot restart
             logger.warning(f"Camera {self.name} is unreachable")
             self.restart_needed = False
+            self.last_restart_attempt = current_time
             return False
-
-        # Camera is reachable but process is not healthy, mark it for restart
-        self.restart_needed = True
-        return False
 
     def needs_restart(self):
         # Check if this recorder needs to be restarted
         return self.restart_needed
+
+    def get_individual_health(self):
+        # Get detailed health status for this specific camera
+        current_time = datetime.now()
+
+        # Check process status
+        process_running = self.process is not None and self.process.poll() is None
+
+        # Check for recent files
+        recent_files = False
+        raw_files = glob.glob(f"{self.raw_dir}/*.mkv")
+
+        for raw_file in raw_files:
+            try:
+                mod_time = datetime.fromtimestamp(os.path.getmtime(raw_file))
+                if (current_time - mod_time).total_seconds() < 120:
+                    recent_files = True
+                    break
+            except Exception:
+                continue
+
+        # Check camera connectivity
+        camera_reachable = self.check_camera_connectivity()
+
+        return {
+            'name': self.name,
+            'process_running': process_running,
+            'recent_files': recent_files,
+            'camera_reachable': camera_reachable,
+            'recording': self.recording,
+            'healthy': process_running and recent_files and camera_reachable
+        }

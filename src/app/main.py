@@ -105,17 +105,26 @@ class NVRSystem:
         self.process_all_segments()
 
     def health_check(self):
-        logger.debug("Running health check")
-        for name, recorder in self.recorders.items():
-            # First check if it's healthy
-            is_healthy = recorder.is_healthy()
+            logger.debug("Running health check")
+            for name, recorder in self.recorders.items():
+                # Get individual camera health status
+                health_status = recorder.get_individual_health()
 
-            if not is_healthy and recorder.needs_restart():
-                logger.warning(f"{name} recording is not healthy, attempting restart...")
-                recorder.stop()
-                time.sleep(2)  # Allow time for cleanup
-                recorder.start()
-                logger.info(f"Restart attempted for {name}")
+                if not health_status['healthy']:
+                    logger.warning(f"Camera {name} health check failed: "
+                                f"process={health_status['process_running']}, "
+                                f"files={health_status['recent_files']}, "
+                                f"reachable={health_status['camera_reachable']}")
+
+                    # Only attempt restart if camera needs it and cooldown has passed
+                    if recorder.needs_restart():
+                        logger.warning(f"{name} recording needs restart, attempting restart...")
+                        recorder.stop()
+                        time.sleep(2)  # Allow time for cleanup
+                        recorder.start()
+                        logger.info(f"Restart attempted for {name}")
+                else:
+                    logger.debug(f"Camera {name} is healthy")
 
     def concatenate_all_cameras(self):
         # Ensure all segments are processed first
