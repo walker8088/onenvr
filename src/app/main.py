@@ -120,8 +120,9 @@ class NVRSystem:
                     if recorder.needs_restart():
                         logger.warning(f"{name} recording needs restart, attempting restart...")
                         recorder.stop()
-                        time.sleep(2)  # Allow time for cleanup
+                        time.sleep(2)
                         recorder.start()
+                        recorder.mark_restart_attempted()
                         logger.info(f"Restart attempted for {name}")
                 else:
                     logger.debug(f"Camera {name} is healthy")

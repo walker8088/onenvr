@@ -93,7 +93,7 @@ class StreamRecorder:
             logger.info(f"Recording initiated for camera: {self.name}")
         except Exception as e:
             logger.error(f"Failed to start recording for {self.name}: {str(e)}")
-            self.restart_needed = True  # Mark for restart if start fails
+            self.restart_needed = True
 
     def _start_file_mover(self):
         # Start a thread to periodically move completed segments to date directories
@@ -107,7 +107,7 @@ class StreamRecorder:
                 self._process_raw_segments()
             except Exception as e:
                 logger.error(f"Error moving segments for {self.name}: {str(e)}")
-            time.sleep(30)  # Check every 30 seconds
+            time.sleep(30)
 
     def _process_raw_segments(self):
         # Move completed segments to their date directories
@@ -194,19 +194,24 @@ class StreamRecorder:
         if camera_reachable:
             # Camera is reachable but recording is unhealthy, mark for restart
             self.restart_needed = True
-            self.last_restart_attempt = current_time
             logger.warning(f"Camera {self.name} is unhealthy but reachable - marking for restart")
             return False
         else:
             # Camera is unreachable, cannot restart
             logger.warning(f"Camera {self.name} is unreachable")
             self.restart_needed = False
-            self.last_restart_attempt = current_time
             return False
 
     def needs_restart(self):
-        # Check if this recorder needs to be restarted
-        return self.restart_needed
+        # Check if this recorder needs to be restarted and is out of cooldown
+        if self.restart_needed and (current_time - self.last_restart_attempt >= self.restart_cooldown):
+            return True
+        return False
+
+    def mark_restart_attempted(self):
+        # Mark that a restart was attempted and reset the restart flag
+        self.restart_needed = False
+        self.last_restart_attempt = time.time()
 
     def get_individual_health(self):
         # Get detailed health status for this specific camera
