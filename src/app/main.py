@@ -98,7 +98,7 @@ class NVRSystem:
 
     def stop(self):
         logger.info(f"Stopping OneNVR system")
-        for recorder in self.recorders.items():
+        for recorder in self.recorders.values():
             recorder.stop()
 
         # Process any final segments
@@ -111,11 +111,6 @@ class NVRSystem:
                 health_status = recorder.get_individual_health()
 
                 if not health_status['healthy']:
-                    logger.warning(f"Camera {name} health check failed: "
-                                f"process={health_status['process_running']}, "
-                                f"files={health_status['recent_files']}, "
-                                f"reachable={health_status['camera_reachable']}")
-
                     # Only attempt restart if camera needs it and cooldown has passed
                     if recorder.needs_restart():
                         logger.warning(f"{name} recording needs restart, attempting restart...")
@@ -124,6 +119,14 @@ class NVRSystem:
                         recorder.start()
                         recorder.mark_restart_attempted()
                         logger.info(f"Restart attempted for {name}")
+                    else:
+                        # Only log warning if not in cooldown period
+                        current_time = time.time()
+                        if current_time - recorder.last_restart_attempt >= recorder.restart_cooldown:
+                            logger.warning(f"Camera {name} health check failed: "
+                                        f"process={health_status['process_running']}, "
+                                        f"files={health_status['recent_files']}, "
+                                        f"reachable={health_status['camera_reachable']}")
                 else:
                     logger.debug(f"Camera {name} is healthy")
 

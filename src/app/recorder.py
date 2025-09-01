@@ -203,6 +203,7 @@ class StreamRecorder:
             return False
 
     def needs_restart(self):
+        current_time = time.time()
         # Check if this recorder needs to be restarted and is out of cooldown
         if self.restart_needed and (current_time - self.last_restart_attempt >= self.restart_cooldown):
             return True
