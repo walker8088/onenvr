@@ -26,8 +26,11 @@ class VideoManager:
         output_file = f"{date_dir}/{camera_name}_{yesterday}.mkv"
 
         # Get all individual segment files (exclude already concatenated files)
-        video_files = [f for f in sorted(glob.glob(input_pattern))
+        all_files = sorted(glob.glob(input_pattern))
+        video_files = [f for f in all_files
                       if not f.endswith(f"{camera_name}_{yesterday}.mkv")]
+
+        logger.debug(f"Found {len(all_files)} total files, {len(video_files)} segment files to process")
 
         if not video_files:
             logger.info(f"No videos to concatenate for {camera_name} on {yesterday}")
@@ -54,10 +57,14 @@ class VideoManager:
                 '-c', 'copy',
                 output_file
             ]
+
+            logger.debug(f"FFmpeg concatenation command: {' '.join(cmd)}")
+
             subprocess.run(cmd, check=True)
             logger.info(f"Successfully concatenated videos for {camera_name} on {yesterday}")
 
             # Clean up individual segments after successful concatenation
+            logger.debug(f"Cleaning up {len(video_files)} individual segment files")
             for video in video_files:
                 os.remove(video)
 
@@ -75,19 +82,24 @@ class VideoManager:
         logger.info(f"Cleaning up recordings older than {cutoff_date.strftime('%Y-%m-%d')}")
 
         removed_count = 0
-        for camera_dir in glob.glob('/storage/*/'):
+        storage_dirs = glob.glob('/storage/*/')
+        logger.debug(f"Found {len(storage_dirs)} camera directories in /storage/")
+
+        for camera_dir in storage_dirs:
             camera_name = os.path.basename(camera_dir.rstrip('/'))
+            logger.debug(f"Processing camera directory: {camera_dir} (camera: {camera_name})")
 
-            for date_dir in glob.glob(f"{camera_dir}*/"):
+            date_dirs = glob.glob(f"{camera_dir}*/")
+            logger.debug(f"Found {len(date_dirs)} date directories for camera {camera_name}")
+
+            for date_dir in date_dirs:
                 dir_name = os.path.basename(date_dir.rstrip('/'))
-
-                # Skip non-date directories
-                if dir_name == 'raw':
-                    continue
+                logger.debug(f"Processing date directory: {date_dir} (date: {dir_name})")
 
                 try:
                     dir_date = datetime.strptime(dir_name, '%Y-%m-%d')
                     if dir_date < cutoff_date:
+                        logger.debug(f"Directory {date_dir} is older than cutoff, removing")
                         # Remove all files in the directory
                         for file_path in glob.glob(f"{date_dir}*"):
                             os.remove(file_path)
@@ -95,6 +107,8 @@ class VideoManager:
                         os.rmdir(date_dir)
                         logger.info(f"Removed old recordings: {date_dir}")
                         removed_count += 1
+                    else:
+                        logger.debug(f"Directory {date_dir} is within retention period, keeping")
                 except (ValueError, OSError) as e:
                     logger.warning(f"Could not process directory {date_dir}: {str(e)}")
                     continue

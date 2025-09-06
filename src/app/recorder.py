@@ -23,11 +23,14 @@ class StreamRecorder:
         self.restart_cooldown = 30
 
     def check_camera_connectivity(self):
+        logger.debug(f"Checking connectivity for camera: {self.name}")
         try:
             parsed = urllib.parse.urlparse(self.rtsp_url)
             socket.create_connection((parsed.hostname, parsed.port or 554), timeout=3)
+            logger.debug(f"Camera {self.name} connectivity check passed")
             return True
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Camera {self.name} connectivity check failed: {str(e)}")
             return False
 
     def get_current_output_dir(self):
@@ -35,10 +38,12 @@ class StreamRecorder:
         current_date = datetime.now().strftime('%Y-%m-%d')
         output_dir = f"/storage/{self.name}/{current_date}"
         os.makedirs(output_dir, exist_ok=True)
+        logger.debug(f"Output directory created/verified: {output_dir}")
         return output_dir
 
     def start(self):
         if self.recording and self.process and self.process.poll() is None:
+            logger.debug(f"Camera {self.name} is already recording, skipping start")
             return
 
         if not self.check_camera_connectivity():
@@ -67,12 +72,15 @@ class StreamRecorder:
             output_pattern
         ]
 
+        logger.debug(f"FFmpeg command for {self.name}: {' '.join(cmd)}")
+
         try:
             self.process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE
             )
+            logger.debug(f"FFmpeg process started for {self.name}, PID: {self.process.pid}")
             self.recording = True
             self._start_directory_monitor()
             logger.info(f"Recording started for camera: {self.name}")
@@ -87,11 +95,13 @@ class StreamRecorder:
 
     def _monitor_directories(self):
         """Ensure date directories exist, especially during day transitions"""
+        logger.debug(f"Directory monitor started for camera: {self.name}")
         while self.recording:
             try:
                 # Create directory for current date
                 current_date = datetime.now().strftime('%Y-%m-%d')
                 current_dir = f"/storage/{self.name}/{current_date}"
+                logger.debug(f"Creating current date directory for {self.name}: {current_dir}")
                 os.makedirs(current_dir, exist_ok=True)
 
                 # If evening hours, also create tomorrow's directory
@@ -99,6 +109,7 @@ class StreamRecorder:
                 if current_time.hour >= 22:
                     next_date = (current_time + timedelta(days=1)).strftime('%Y-%m-%d')
                     next_dir = f"/storage/{self.name}/{next_date}"
+                    logger.debug(f"Creating next day directory for {self.name}: {next_dir}")
                     os.makedirs(next_dir, exist_ok=True)
 
             except Exception as e:
@@ -109,17 +120,24 @@ class StreamRecorder:
     def stop(self):
         if self.process:
             self.recording = False
+            logger.debug(f"Sending SIGTERM to process {self.process.pid} for camera: {self.name}")
             self.process.send_signal(signal.SIGTERM)
             try:
                 self.process.wait(timeout=10)
+                logger.debug(f"Process terminated gracefully for camera: {self.name}")
             except subprocess.TimeoutExpired:
+                logger.debug(f"Process timeout, sending SIGKILL to camera: {self.name}")
                 self.process.kill()
             self.process = None
             logger.info(f"Stopped recording for camera: {self.name}")
+        else:
+            logger.debug(f"No process to stop for camera: {self.name}")
 
     def restart(self):
+        logger.debug(f"Restart method called for camera: {self.name}")
         current_time = time.time()
         if current_time - self.last_restart < self.restart_cooldown:
+            logger.debug(f"Restart cooldown active for camera: {self.name}, skipping restart")
             return
 
         logger.info(f"Restarting camera: {self.name}")
@@ -127,6 +145,7 @@ class StreamRecorder:
         time.sleep(3)
         self.start()
         self.last_restart = current_time
+        logger.debug(f"Restart complete for camera: {self.name}")
 
     def is_healthy(self):
         # Check if process is running
@@ -143,6 +162,7 @@ class StreamRecorder:
         date_dir = f"/storage/{self.name}/{current_date}"
 
         if not os.path.exists(date_dir):
+            logger.debug(f"Date directory does not exist for {self.name}: {date_dir}")
             return False
 
         files = glob.glob(f"{date_dir}/*.mkv")
@@ -150,10 +170,13 @@ class StreamRecorder:
             try:
                 mod_time = datetime.fromtimestamp(os.path.getmtime(file_path))
                 if (current_time - mod_time).total_seconds() < 300:  # 5 minutes
+                    logger.debug(f"Recent file found for {self.name}, health check passed")
                     return True
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Error checking file modification time for {self.name}: {str(e)}")
                 continue
 
+        logger.debug(f"No recent files found for {self.name}, health check failed")
         return False
 
     def get_individual_health(self):
