@@ -8,7 +8,6 @@ from recorder import StreamRecorder
 from video_manager import VideoManager
 from web_interface import create_web_server
 import logging
-import glob
 
 # Configure logging
 setup_logging()
@@ -35,10 +34,8 @@ class NVRSystem:
             raw_dir = f"{base_dir}/raw"
             os.makedirs(base_dir, exist_ok=True)
             os.makedirs(raw_dir, exist_ok=True)
-
             # Create and store recorder instance
             self.recorders[camera_name] = StreamRecorder(camera_config)
-
         # Make video manager aware of recorders
         self.video_manager.set_recorders(self.recorders)
 
@@ -48,15 +45,9 @@ class NVRSystem:
             # Add a delay to ensure all segments are moved before concatenation
             concat_time = datetime.strptime(self.config['concatenation_time'], '%H:%M')
             process_time = (concat_time - timedelta(minutes=5)).strftime('%H:%M')
-
             # Schedule final segment processing before concatenation
-            schedule.every().day.at(process_time).do(
-                self.process_all_segments
-            )
-
-            schedule.every().day.at(self.config['concatenation_time']).do(
-                self.concatenate_all_cameras
-            )
+            schedule.every().day.at(process_time).do(self.process_all_segments)
+            schedule.every().day.at(self.config['concatenation_time']).do(self.concatenate_all_cameras)
         else:
             logger.info("Concatenation is disabled in the configuration")
 
@@ -64,15 +55,12 @@ class NVRSystem:
             self.video_manager.cleanup_old_recordings
         )
         logger.info(f"Deletion of recordings older than {self.config['retention_days']} days scheduled at {self.config['deletion_time']} every day")
-
         # Add periodic segment processing
         schedule.every(5).minutes.do(self.process_all_segments)
-
         # Add periodic health check
-        schedule.every(1).minutes.do(self.health_check)
+        schedule.every(3).minutes.do(self.health_check)
 
     def process_all_segments(self):
-        # Process any completed segments for all cameras
         logger.debug(f"Processing completed segments for all cameras")
         for recorder in self.recorders.values():
             try:
@@ -100,42 +88,32 @@ class NVRSystem:
         logger.info(f"Stopping OneNVR system")
         for recorder in self.recorders.values():
             recorder.stop()
-
-        # Process any final segments
         self.process_all_segments()
 
     def health_check(self):
-            logger.debug("Running health check")
-            for name, recorder in self.recorders.items():
-                # Get individual camera health status
+        logger.debug("Running health check")
+        for name, recorder in self.recorders.items():
+            if recorder.needs_restart():
+                logger.warning(f"{name} needs restart, attempting restart...")
+                recorder.stop()
+                time.sleep(3)
+                recorder.start()
+                recorder.mark_restart_attempted()
+                logger.info(f"Restart attempted for {name}")
+            elif not recorder.is_healthy():
                 health_status = recorder.get_individual_health()
-
-                if not health_status['healthy']:
-                    # Only attempt restart if camera needs it and cooldown has passed
-                    if recorder.needs_restart():
-                        logger.warning(f"{name} recording needs restart, attempting restart...")
-                        recorder.stop()
-                        time.sleep(2)
-                        recorder.start()
-                        recorder.mark_restart_attempted()
-                        logger.info(f"Restart attempted for {name}")
-                    else:
-                        # Only log warning if not in cooldown period
-                        current_time = time.time()
-                        if current_time - recorder.last_restart_attempt >= recorder.restart_cooldown:
-                            logger.warning(f"Camera {name} health check failed: "
-                                        f"process={health_status['process_running']}, "
-                                        f"files={health_status['recent_files']}, "
-                                        f"reachable={health_status['camera_reachable']}")
-                else:
-                    logger.debug(f"Camera {name} is healthy")
+                if not health_status['camera_reachable']:
+                    logger.warning(f"Camera {name} is unreachable")
+                elif not health_status['process_running']:
+                    logger.warning(f"Camera {name} process not running")
+                elif not health_status['recent_files']:
+                    logger.warning(f"Camera {name} has no recent files")
+            else:
+                logger.debug(f"Camera {name} is healthy")
 
     def concatenate_all_cameras(self):
-        # Ensure all segments are processed first
         self.process_all_segments()
-        # Wait a short time to ensure file operations are complete
         time.sleep(5)
-        # Now concatenate
         logger.info(f"Starting daily video concatenation")
         for camera_name in self.recorders.keys():
             logger.info(f"Concatenating videos for {camera_name}")

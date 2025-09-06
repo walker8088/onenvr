@@ -9,30 +9,17 @@ from datetime import datetime, timedelta
 logger = logging.getLogger(__name__)
 
 def check_ffmpeg_processes():
-    # Check if ffmpeg processes are running for recording
     try:
-        # Use ps command to look for ffmpeg processes
-        result = subprocess.run(
-            ['ps', '-ef'],
-            capture_output=True,
-            text=True
-        )
-
-        # Check if there are any ffmpeg processes running for recording
+        result = subprocess.run(['ps', '-ef'], capture_output=True, text=True)
         ffmpeg_processes = [line for line in result.stdout.split('\n')
                          if 'ffmpeg' in line and 'segment' in line]
-
-        if not ffmpeg_processes:
-            logger.error("No ffmpeg recording processes found")
-            return False
-
-        return True
+        return len(ffmpeg_processes) > 0
     except Exception as e:
         logger.error(f"Error checking ffmpeg processes: {str(e)}")
         return False
 
 def check_individual_camera_health():
-    """Check health of each individual camera"""
+    # Check health of each individual camera
     camera_dirs = glob.glob('/storage/*/raw')
     if not camera_dirs:
         print("No camera directories found")
@@ -50,7 +37,7 @@ def check_individual_camera_health():
         for f in files:
             try:
                 mod_time = datetime.fromtimestamp(os.path.getmtime(f))
-                if now - mod_time < timedelta(minutes=3):  # More lenient for health check
+                if now - mod_time < timedelta(minutes=5):
                     recent_files_found = True
                     break
             except Exception as e:
@@ -78,16 +65,12 @@ def check_health():
     # Check 3: Check for web server connection and response
     try:
         import urllib.request
-        import urllib.error
         with urllib.request.urlopen('http://localhost:5000/', timeout=5) as response:
             if response.getcode() != 200:
                 print(f"Web server returned unexpected status: {response.getcode()}")
                 return False
-    except urllib.error.URLError as e:
-        print(f"Web server connection failed: {str(e.reason)}")
-        return False
     except Exception as e:
-        print(f"Error checking web server: {str(e)}")
+        print(f"Web server check failed: {str(e)}")
         return False
 
     # Check 4: Check for ffmpeg processes
