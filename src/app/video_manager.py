@@ -8,43 +8,39 @@ logger = logging.getLogger(__name__)
 
 class VideoManager:
     def __init__(self, retention_days):
-        # Initialize VideoManager with retention policy.
         self.retention_days = retention_days
         self.recorders = {}
 
     def set_recorders(self, recorders):
-        # Store reference to recorder instances
         self.recorders = recorders
-
-    def _get_recorder(self, camera_name):
-        # Get recorder instance for a camera
-        return self.recorders.get(camera_name)
 
     def concatenate_daily_videos(self, camera_name):
         yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
         date_dir = f"/storage/{camera_name}/{yesterday}"
-        raw_dir = f"/storage/{camera_name}/raw"
 
-        # First, ensure all completed segments are moved
-        recorder = self._get_recorder(camera_name)
-        if recorder:
-            recorder._process_raw_segments()
+        if not os.path.exists(date_dir):
+            logger.info(f"No directory found for {camera_name} on {yesterday}")
+            return
 
         input_pattern = f"{date_dir}/*.mkv"
         output_file = f"{date_dir}/{camera_name}_{yesterday}.mkv"
 
-        if not glob.glob(input_pattern):
+        # Get all individual segment files (exclude already concatenated files)
+        video_files = [f for f in sorted(glob.glob(input_pattern))
+                      if not f.endswith(f"{camera_name}_{yesterday}.mkv")]
+
+        if not video_files:
             logger.info(f"No videos to concatenate for {camera_name} on {yesterday}")
             return
 
         try:
             # Create file list for ffmpeg
-            with open('filelist.txt', 'w') as f:
-                for video in sorted(glob.glob(input_pattern)):
-                    if f"{camera_name}_" not in video:
-                        f.write(f"file '{os.path.abspath(video)}'\n")
+            filelist_path = f"/tmp/filelist_{camera_name}_{yesterday}.txt"
+            with open(filelist_path, 'w') as f:
+                for video in video_files:
+                    f.write(f"file '{os.path.abspath(video)}'\n")
 
-            # Concatenate videos
+            # Concatenate videos with low I/O priority
             cmd = [
                 'ionice',
                 '-c', '2',
@@ -54,39 +50,54 @@ class VideoManager:
                 '-loglevel', 'error',
                 '-f', 'concat',
                 '-safe', '0',
-                '-i', 'filelist.txt',
+                '-i', filelist_path,
                 '-c', 'copy',
                 output_file
             ]
             subprocess.run(cmd, check=True)
             logger.info(f"Successfully concatenated videos for {camera_name} on {yesterday}")
 
-            # Clean up individual segments
-            for video in glob.glob(input_pattern):
-                if f"{camera_name}_" not in video:
-                    os.remove(video)
+            # Clean up individual segments after successful concatenation
+            for video in video_files:
+                os.remove(video)
+
+            # Clean up filelist
+            os.remove(filelist_path)
 
         except Exception as e:
             logger.error(f"Failed to concatenate videos for {camera_name}: {str(e)}")
-        finally:
-            if os.path.exists('filelist.txt'):
-                os.remove('filelist.txt')
+            # Clean up filelist on error
+            if os.path.exists(filelist_path):
+                os.remove(filelist_path)
 
     def cleanup_old_recordings(self):
-        cutoff_date = datetime.now() - timedelta(days=self.retention_days + 1)
-        logger.info(f"Cleaning up recordings from {cutoff_date.strftime('%Y-%m-%d')} and earlier")
-        found_old_recordings = False
+        cutoff_date = datetime.now() - timedelta(days=self.retention_days)
+        logger.info(f"Cleaning up recordings older than {cutoff_date.strftime('%Y-%m-%d')}")
+
+        removed_count = 0
         for camera_dir in glob.glob('/storage/*/'):
+            camera_name = os.path.basename(camera_dir.rstrip('/'))
+
             for date_dir in glob.glob(f"{camera_dir}*/"):
-                try:
-                    dir_date = datetime.strptime(os.path.basename(date_dir.rstrip('/')), '%Y-%m-%d')
-                    if dir_date < cutoff_date:
-                        found_old_recordings = True
-                        for file in glob.glob(f"{date_dir}*"):
-                            os.remove(file)
-                        os.rmdir(date_dir)
-                        logger.info(f"Removed old recordings in {date_dir}")
-                except ValueError:
+                dir_name = os.path.basename(date_dir.rstrip('/'))
+
+                # Skip non-date directories
+                if dir_name == 'raw':
                     continue
-        if not found_old_recordings:
-            logger.info(f"No recordings found from {cutoff_date.strftime('%Y-%m-%d')} or earlier to delete")
+
+                try:
+                    dir_date = datetime.strptime(dir_name, '%Y-%m-%d')
+                    if dir_date < cutoff_date:
+                        # Remove all files in the directory
+                        for file_path in glob.glob(f"{date_dir}*"):
+                            os.remove(file_path)
+                        # Remove the directory
+                        os.rmdir(date_dir)
+                        logger.info(f"Removed old recordings: {date_dir}")
+                        removed_count += 1
+                except (ValueError, OSError) as e:
+                    logger.warning(f"Could not process directory {date_dir}: {str(e)}")
+                    continue
+
+        if removed_count == 0:
+            logger.info("No old recordings found to delete")

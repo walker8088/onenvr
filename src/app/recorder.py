@@ -1,10 +1,9 @@
 import os
 import subprocess
 import logging
-import shutil
 import threading
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 import signal
 import glob
 import socket
@@ -20,9 +19,8 @@ class StreamRecorder:
         self.interval = camera_config['interval']
         self.process = None
         self.recording = False
-        self.raw_dir = f"/storage/{self.name}/raw"
-        self.last_restart_attempt = 0
-        self.restart_cooldown = 60
+        self.last_restart = 0
+        self.restart_cooldown = 30
 
     def check_camera_connectivity(self):
         try:
@@ -32,26 +30,25 @@ class StreamRecorder:
         except Exception:
             return False
 
+    def get_current_output_dir(self):
+        """Get current date directory for output"""
+        current_date = datetime.now().strftime('%Y-%m-%d')
+        output_dir = f"/storage/{self.name}/{current_date}"
+        os.makedirs(output_dir, exist_ok=True)
+        return output_dir
+
     def start(self):
         if self.recording and self.process and self.process.poll() is None:
             return
 
-        max_retries = 5
-        retry_delay = 5
-
-        for attempt in range(max_retries):
-            if self.check_camera_connectivity():
-                break
-            logger.warning(f"Waiting for camera {self.name} to be reachable (attempt {attempt + 1}/{max_retries})")
-            time.sleep(retry_delay)
-        else:
-            logger.error(f"Failed to connect to camera {self.name} after {max_retries} attempts")
+        if not self.check_camera_connectivity():
+            logger.warning(f"Camera {self.name} is not reachable")
             return
 
         logger.info(f"Starting recording for camera: {self.name}")
-        output_pattern = f"{self.raw_dir}/%Y-%m-%d_%H-%M-%S.mkv"
-        logger.debug(f"Creating raw directory for {self.name}")
-        os.makedirs(self.raw_dir, exist_ok=True)
+
+        output_dir = self.get_current_output_dir()
+        output_pattern = f"{output_dir}/%Y-%m-%d_%H-%M-%S.mkv"
 
         cmd = [
             'ffmpeg',
@@ -77,57 +74,37 @@ class StreamRecorder:
                 stderr=subprocess.PIPE
             )
             self.recording = True
-            self._start_file_mover()
+            self._start_directory_monitor()
             logger.info(f"Recording started for camera: {self.name}")
         except Exception as e:
             logger.error(f"Failed to start recording for {self.name}: {str(e)}")
             self.recording = False
 
-    def _start_file_mover(self):
-        # Start a thread to periodically move completed segments to date directories
-        self.mover_thread = threading.Thread(target=self._move_segments, daemon=True)
-        self.mover_thread.start()
+    def _start_directory_monitor(self):
+        """Monitor and create new date directories as needed"""
+        monitor_thread = threading.Thread(target=self._monitor_directories, daemon=True)
+        monitor_thread.start()
 
-    def _move_segments(self):
-        # Periodically move completed segments to their date-based directories
+    def _monitor_directories(self):
+        """Ensure date directories exist, especially during day transitions"""
         while self.recording:
             try:
-                self._process_raw_segments()
-            except Exception as e:
-                logger.error(f"Error moving segments for {self.name}: {str(e)}")
-            time.sleep(30)
+                # Create directory for current date
+                current_date = datetime.now().strftime('%Y-%m-%d')
+                current_dir = f"/storage/{self.name}/{current_date}"
+                os.makedirs(current_dir, exist_ok=True)
 
-    def _process_raw_segments(self):
-        # Move completed segments to their date directories
-        current_time = datetime.now()
-        raw_files = glob.glob(f"{self.raw_dir}/*.mkv")
-
-        for raw_file in raw_files:
-            try:
-                mod_time = datetime.fromtimestamp(os.path.getmtime(raw_file))
-                if (current_time - mod_time).total_seconds() < self.interval:
-                    continue
-
-                filename = os.path.basename(raw_file)
-                date_str = filename.split('_')[0]
-                date_dir = f"/storage/{self.name}/{date_str}"
-                os.makedirs(date_dir, exist_ok=True)
-                new_path = os.path.join(date_dir, filename)
-
-                # Verify read access to source and write access to destination
-                if not os.access(raw_file, os.R_OK):
-                    raise IOError(f"No read permission for source file: {raw_file}")
-                if not os.access(os.path.dirname(new_path), os.W_OK):
-                    raise IOError(f"No write permission for destination directory: {os.path.dirname(new_path)}")
-                # Verify enough space exists at destination
-                if os.path.getsize(raw_file) > shutil.disk_usage(date_dir).free:
-                    raise IOError(f"Not enough space at destination: {date_dir}")
-
-                shutil.move(raw_file, new_path)
-                logger.debug(f"Moved {filename} to {date_dir}")
+                # If evening hours, also create tomorrow's directory
+                current_time = datetime.now()
+                if current_time.hour >= 22:
+                    next_date = (current_time + timedelta(days=1)).strftime('%Y-%m-%d')
+                    next_dir = f"/storage/{self.name}/{next_date}"
+                    os.makedirs(next_dir, exist_ok=True)
 
             except Exception as e:
-                logger.error(f"Error processing {raw_file}: {str(e)}")
+                logger.error(f"Error managing directories for {self.name}: {str(e)}")
+
+            time.sleep(3600)  # Check every hour
 
     def stop(self):
         if self.process:
@@ -138,62 +115,67 @@ class StreamRecorder:
             except subprocess.TimeoutExpired:
                 self.process.kill()
             self.process = None
+            logger.info(f"Stopped recording for camera: {self.name}")
 
-            try:
-                self._process_raw_segments()
-            except Exception as e:
-                logger.error(f"Error processing remaining segments: {str(e)}")
+    def restart(self):
+        current_time = time.time()
+        if current_time - self.last_restart < self.restart_cooldown:
+            return
+
+        logger.info(f"Restarting camera: {self.name}")
+        self.stop()
+        time.sleep(3)
+        self.start()
+        self.last_restart = current_time
 
     def is_healthy(self):
-        # Process running check
+        # Check if process is running
         if not self.process or self.process.poll() is not None:
             return False
 
-        # Recent files check
-        current_time = datetime.now()
-        raw_files = glob.glob(f"{self.raw_dir}/*.mkv")
+        # Check if camera is reachable
+        if not self.check_camera_connectivity():
+            return False
 
-        for raw_file in raw_files:
+        # Check for recent files
+        current_time = datetime.now()
+        current_date = current_time.strftime('%Y-%m-%d')
+        date_dir = f"/storage/{self.name}/{current_date}"
+
+        if not os.path.exists(date_dir):
+            return False
+
+        files = glob.glob(f"{date_dir}/*.mkv")
+        for file_path in files:
             try:
-                mod_time = datetime.fromtimestamp(os.path.getmtime(raw_file))
-                if (current_time - mod_time).total_seconds() < 180:  # 3 minutes
+                mod_time = datetime.fromtimestamp(os.path.getmtime(file_path))
+                if (current_time - mod_time).total_seconds() < 300:  # 5 minutes
                     return True
             except Exception:
                 continue
 
         return False
 
-    def needs_restart(self):
-        current_time = time.time()
-        if current_time - self.last_restart_attempt < self.restart_cooldown:
-            return False
-
-        if not self.is_healthy() and self.check_camera_connectivity():
-            return True
-
-        return False
-
-    def mark_restart_attempted(self):
-        self.last_restart_attempt = time.time()
-
     def get_individual_health(self):
-        # Get detailed health status for this specific camera
-        current_time = datetime.now()
-        # Check process status
+        """Get detailed health status for this camera"""
         process_running = self.process is not None and self.process.poll() is None
-        # Check for recent files
-        recent_files = False
-        raw_files = glob.glob(f"{self.raw_dir}/*.mkv")
-        for raw_file in raw_files:
-            try:
-                mod_time = datetime.fromtimestamp(os.path.getmtime(raw_file))
-                if (current_time - mod_time).total_seconds() < 180:
-                    recent_files = True
-                    break
-            except Exception:
-                continue
-        # Check camera connectivity
         camera_reachable = self.check_camera_connectivity()
+        recent_files = False
+
+        current_time = datetime.now()
+        current_date = current_time.strftime('%Y-%m-%d')
+        date_dir = f"/storage/{self.name}/{current_date}"
+
+        if os.path.exists(date_dir):
+            files = glob.glob(f"{date_dir}/*.mkv")
+            for file_path in files:
+                try:
+                    mod_time = datetime.fromtimestamp(os.path.getmtime(file_path))
+                    if (current_time - mod_time).total_seconds() < 300:
+                        recent_files = True
+                        break
+                except Exception:
+                    continue
 
         return {
             'name': self.name,
@@ -201,5 +183,5 @@ class StreamRecorder:
             'recent_files': recent_files,
             'camera_reachable': camera_reachable,
             'recording': self.recording,
-            'healthy': process_running and recent_files
+            'healthy': process_running and recent_files and camera_reachable
         }
