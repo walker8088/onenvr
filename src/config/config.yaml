@@ -1,11 +1,6 @@
 cameras:
-  - name: doorway
-    rtsp_url: rtsp://192.168.1.10:554/stream1
-    codec: copy
-    interval: 300
-
-  - name: backyard
-    rtsp_url: rtsp://userid:password@192.168.1.20:554/live/stream
+  - name: home
+    rtsp_url: rtsp://admin:password@192.168.1.74/stream1
     codec: copy
     interval: 600
 

@@ -48,5 +48,7 @@ def load_config(set_conf_path):
             logger.debug(f"  Codec: {camera['codec']}")
             logger.debug(f"  Segment interval: {camera['interval']} seconds")
         logger.debug("======================================")
-
+    
+    config['config_path'] = set_conf_path
+        
     return config
