@@ -11,10 +11,6 @@ env/
 .venv/
 .env/
 
-# 依赖管理
-Pipfile.lock
-requirements.txt
-
 # 构建和分发
 build/
 dist/
@@ -36,7 +32,8 @@ pytest_cache/
 *.sublime-workspace
 
 # 日志和临时文件
-*.log
+*.lock
+.log
 *.log.*
 *.tmp
 temp/
