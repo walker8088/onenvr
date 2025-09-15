@@ -9,6 +9,8 @@ import glob
 import socket
 import urllib.parse
 
+from config import CONFIG_PATH, STORAGE_PATH
+
 logger = logging.getLogger(__name__)
 
 class StreamRecorder:
@@ -36,7 +38,7 @@ class StreamRecorder:
     def get_current_output_dir(self):
         """Get current date directory for output"""
         current_date = datetime.now().strftime('%Y-%m-%d')
-        output_dir = f"/storage/{self.name}/{current_date}"
+        output_dir = f"{STORAGE_PATH}/{self.name}/{current_date}"
         os.makedirs(output_dir, exist_ok=True)
         logger.debug(f"Output directory created/verified: {output_dir}")
         return output_dir
@@ -100,7 +102,7 @@ class StreamRecorder:
             try:
                 # Create directory for current date
                 current_date = datetime.now().strftime('%Y-%m-%d')
-                current_dir = f"/storage/{self.name}/{current_date}"
+                current_dir = f"{STORAGE_PATH}/{self.name}/{current_date}"
                 logger.debug(f"Creating current date directory for {self.name}: {current_dir}")
                 os.makedirs(current_dir, exist_ok=True)
 
@@ -108,7 +110,7 @@ class StreamRecorder:
                 current_time = datetime.now()
                 if current_time.hour >= 22:
                     next_date = (current_time + timedelta(days=1)).strftime('%Y-%m-%d')
-                    next_dir = f"/storage/{self.name}/{next_date}"
+                    next_dir = f"{STORAGE_PATH}/{self.name}/{next_date}"
                     logger.debug(f"Creating next day directory for {self.name}: {next_dir}")
                     os.makedirs(next_dir, exist_ok=True)
 
@@ -159,7 +161,7 @@ class StreamRecorder:
         # Check for recent files
         current_time = datetime.now()
         current_date = current_time.strftime('%Y-%m-%d')
-        date_dir = f"/storage/{self.name}/{current_date}"
+        date_dir = f"{STORAGE_PATH}/{self.name}/{current_date}"
 
         if not os.path.exists(date_dir):
             logger.debug(f"Date directory does not exist for {self.name}: {date_dir}")
@@ -187,7 +189,7 @@ class StreamRecorder:
 
         current_time = datetime.now()
         current_date = current_time.strftime('%Y-%m-%d')
-        date_dir = f"/storage/{self.name}/{current_date}"
+        date_dir = f"{STORAGE_PATH}/{self.name}/{current_date}"
 
         if os.path.exists(date_dir):
             files = glob.glob(f"{date_dir}/*.mkv")

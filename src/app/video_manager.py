@@ -4,6 +4,8 @@ import logging
 from datetime import datetime, timedelta
 import glob
 
+from config import CONFIG_PATH, STORAGE_PATH
+
 logger = logging.getLogger(__name__)
 
 class VideoManager:
@@ -16,7 +18,7 @@ class VideoManager:
 
     def concatenate_daily_videos(self, camera_name):
         yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-        date_dir = f"/storage/{camera_name}/{yesterday}"
+        date_dir = f"{STORAGE_PATH}/{camera_name}/{yesterday}"
 
         if not os.path.exists(date_dir):
             logger.info(f"No directory found for {camera_name} on {yesterday}")
@@ -82,7 +84,7 @@ class VideoManager:
         logger.info(f"Cleaning up recordings older than {cutoff_date.strftime('%Y-%m-%d')}")
 
         removed_count = 0
-        storage_dirs = glob.glob('/storage/*/')
+        storage_dirs = glob.glob('{STORAGE_PATH}/*/')
         logger.debug(f"Found {len(storage_dirs)} camera directories in /storage/")
 
         for camera_dir in storage_dirs:

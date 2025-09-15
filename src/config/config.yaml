@@ -11,5 +11,5 @@ cameras:
 
 retention_days: 7
 concatenation: true
-concatenation_time: "02:00"
+concatenation_time: "05:00"
 deletion_time: "01:00"

@@ -3,14 +3,15 @@ import sys
 import glob
 import subprocess
 from datetime import datetime, timedelta
+from config import CONFIG_PATH, STORAGE_PATH
 
 def check_storage_access():
     """Check if storage directory is accessible"""
-    return os.path.exists('/storage') and os.access('/storage', os.W_OK)
+    return os.path.exists(STORAGE_PATH) and os.access(STORAGE_PATH, os.W_OK)
 
 def check_config_access():
     """Check if config directory is accessible"""
-    return os.path.exists('/config') and os.access('/config', os.R_OK)
+    return os.path.exists(CONFIG_PATH) and os.access(CONFIG_PATH, os.R_OK)
 
 def check_web_server():
     """Check if web server is responding"""
@@ -32,7 +33,7 @@ def check_ffmpeg_processes():
 
 def check_camera_recordings():
     """Check if cameras are actively recording (recent files exist)"""
-    camera_dirs = glob.glob('/storage/*/2*')  # Date directories like 2024-01-01
+    camera_dirs = glob.glob(f'/{STORAGE_PATH}/*/2*')  # Date directories like 2024-01-01
     if not camera_dirs:
         return False
 

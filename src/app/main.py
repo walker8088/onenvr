@@ -3,7 +3,7 @@ import schedule
 import time
 import threading
 from datetime import datetime, timedelta
-from config import load_config, setup_logging
+from config import load_config, setup_logging, CONFIG_PATH, STORAGE_PATH
 from recorder import StreamRecorder
 from video_manager import VideoManager
 from web_interface import create_web_server
