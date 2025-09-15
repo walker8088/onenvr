@@ -478,7 +478,7 @@ def create_web_server(config):
     def date_videos(camera, date):
         path = get_safe_path(base_storage, camera, date)
         videos = sorted(
-            [v for v in os.listdir(path) if v.endswith('.mkv')],
+            [v for v in os.listdir(path) if v.endswith('.mp4')],
             key=lambda x: x.split('.')[0],
             reverse=False
         )
