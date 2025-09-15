@@ -85,7 +85,7 @@ class VideoManager:
 
         removed_count = 0
         storage_dirs = glob.glob('{STORAGE_PATH}/*/')
-        logger.debug(f"Found {len(storage_dirs)} camera directories in /storage/")
+        logger.debug(f"Found {len(storage_dirs)} camera directories in {STORAGE_PATH}/")
 
         for camera_dir in storage_dirs:
             camera_name = os.path.basename(camera_dir.rstrip('/'))

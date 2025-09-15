@@ -51,7 +51,7 @@ class NVRSystem:
         self.logger.debug(f"Creating initial directories for date: {current_date}")
 
         for camera_name in self.recorders.keys():
-            date_dir = f"/storage/{camera_name}/{current_date}"
+            date_dir = f"{STORAGE_PATH}/{camera_name}/{current_date}"
             os.makedirs(date_dir, exist_ok=True)
             self.logger.debug(f"Directory created/verified: {date_dir}")
 
