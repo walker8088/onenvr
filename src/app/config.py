@@ -3,9 +3,6 @@ import yaml
 import logging
 from schema import config_schema
 
-CONFIG_PATH = 'config'
-STORAGE_PATH = 'storage'
-
 def setup_logging():
     level = logging.DEBUG if os.environ.get('DEBUG') == 'true' else logging.INFO
     # Clear existing handlers
@@ -26,12 +23,13 @@ def setup_logging():
     logger = logging.getLogger(__name__)
     return logger
 
-def load_config():
+def load_config(set_conf_path):
     logger = logging.getLogger(__name__)
-    config_path = f'{CONFIG_PATH}/config.yaml'
+    
+    config_path = f'{set_conf_path}/config.yaml'
     with open(config_path) as f:
         config = yaml.safe_load(f)
-
+    
     # Validate config
     config = config_schema(config)
 

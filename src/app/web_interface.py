@@ -6,8 +6,6 @@ from datetime import datetime
 from flask import Flask, send_from_directory, render_template_string, abort, request, redirect, url_for, session, flash
 from functools import wraps
 
-from config import CONFIG_PATH, STORAGE_PATH
-
 logger = logging.getLogger(__name__)
 
 HTML_TEMPLATES = {
@@ -303,10 +301,10 @@ HTML_TEMPLATES = {
     '''
 }
 
-def create_web_server():
+def create_web_server(config):
     app = Flask(__name__)
-    base_storage = STORAGE_PATH
-    config_dir = CONFIG_PATH
+    base_storage = config['storage_path']
+    config_dir = config['config_path']
 
     # Store auth files in persistent config directory
     auth_file = os.path.join(config_dir, 'auth.dat')

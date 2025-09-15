@@ -3,7 +3,7 @@ import schedule
 import time
 import threading
 from datetime import datetime, timedelta
-from config import load_config, setup_logging, CONFIG_PATH, STORAGE_PATH
+from config import load_config, setup_logging
 from recorder import StreamRecorder
 from video_manager import VideoManager
 from web_interface import create_web_server
@@ -14,12 +14,15 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 class NVRSystem:
-    def __init__(self):
+    def __init__(self, config_path):
         self.logger = logging.getLogger(__name__)
         self.logger.info("Initializing OneNVR system")
-        self.config = load_config()
+        self.config = load_config(config_path)
+        self.config['config_path'] = config_path
+        self.config_path = config_path
+        self.storage_path = self.config['storage_path']
         self.recorders = {}
-        self.video_manager = VideoManager(self.config['retention_days'])
+        self.video_manager = VideoManager(self.config)
         self.setup_recorders()
         self.setup_schedules()
         self.start_web_server()
@@ -28,7 +31,7 @@ class NVRSystem:
         self.logger.debug(f"Setting up recorders for {len(self.config['cameras'])} cameras")
         for camera_config in self.config['cameras']:
             camera_name = camera_config['name']
-            self.recorders[camera_name] = StreamRecorder(camera_config)
+            self.recorders[camera_name] = StreamRecorder(camera_config, self.storage_path)
         self.video_manager.set_recorders(self.recorders)
         self.logger.debug("All recorders setup complete")
 
@@ -51,7 +54,7 @@ class NVRSystem:
         self.logger.debug(f"Creating initial directories for date: {current_date}")
 
         for camera_name in self.recorders.keys():
-            date_dir = f"{STORAGE_PATH}/{camera_name}/{current_date}"
+            date_dir = f"{self.storage_path}/{camera_name}/{current_date}"
             os.makedirs(date_dir, exist_ok=True)
             self.logger.debug(f"Directory created/verified: {date_dir}")
 
@@ -102,7 +105,7 @@ class NVRSystem:
 
     def start_web_server(self):
         self.logger.debug("Creating web server")
-        self.web_app = create_web_server()
+        self.web_app = create_web_server(self.config)
         self.logger.debug("Starting web server thread")
         server_thread = threading.Thread(
             target=self.web_app.run,
@@ -114,7 +117,7 @@ class NVRSystem:
 
 if __name__ == "__main__":
     try:
-        nvr = NVRSystem()
+        nvr = NVRSystem('config')
         nvr.start()
     except Exception as e:
         logger.error(f"Failed to start OneNVR system: {str(e)}")

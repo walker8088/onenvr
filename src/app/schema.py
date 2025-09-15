@@ -9,6 +9,7 @@ config_schema = Schema({
     }],
     Optional('retention_days', default=7): All(int, Range(min=1)),
     Optional('concatenation', default=True): bool,
-    Optional('concatenation_time', default='02:00'): str,
-    Optional('deletion_time', default='01:00'): str
+    Optional('concatenation_time', default='05:00'): str,
+    Optional('deletion_time', default='01:00'): str,
+    Optional('storage_path', default='storage'): str  
 })
