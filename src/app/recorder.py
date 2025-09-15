@@ -54,7 +54,7 @@ class StreamRecorder:
         logger.info(f"Starting recording for camera: {self.name}")
 
         output_dir = self.get_current_output_dir()
-        output_pattern = f"{output_dir}/%Y-%m-%d_%H-%M-%S.mkv"
+        output_pattern = f"{output_dir}/%Y-%m-%d_%H-%M-%S.mp4"
 
         cmd = [
             'ffmpeg',
@@ -67,7 +67,7 @@ class StreamRecorder:
             '-f', 'segment',
             '-reset_timestamps', '1',
             '-segment_time', str(self.interval),
-            '-segment_format', 'mkv',
+            '-segment_format', 'mp4',
             '-segment_atclocktime', '1',
             '-strftime', '1',
             output_pattern
