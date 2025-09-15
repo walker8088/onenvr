@@ -61,7 +61,7 @@ class StreamRecorder:
             '-hide_banner', '-y',
             '-loglevel', 'error',
             '-rtsp_transport', 'tcp',
-            '-use_wallclock_as_timestamps', '1',
+            #'-use_wallclock_as_timestamps', '1',
             '-i', self.rtsp_url,
             #'-cv', self.codec,
             '-c:v copy -c:a mp3 -ar 16000 -ac 1',
@@ -167,7 +167,7 @@ class StreamRecorder:
             logger.debug(f"Date directory does not exist for {self.name}: {date_dir}")
             return False
 
-        files = glob.glob(f"{date_dir}/*.mkv")
+        files = glob.glob(f"{date_dir}/*.mp4")
         for file_path in files:
             try:
                 mod_time = datetime.fromtimestamp(os.path.getmtime(file_path))
@@ -192,7 +192,7 @@ class StreamRecorder:
         date_dir = f"{self.storage_path}/{self.name}/{current_date}"
 
         if os.path.exists(date_dir):
-            files = glob.glob(f"{date_dir}/*.mkv")
+            files = glob.glob(f"{date_dir}/*.mp4")
             for file_path in files:
                 try:
                     mod_time = datetime.fromtimestamp(os.path.getmtime(file_path))
