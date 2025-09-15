@@ -322,7 +322,7 @@ def create_web_server(config):
         sanitized = os.path.normpath(os.path.join(*parts)).lstrip('/')
         if '..' in sanitized or not sanitized.startswith('storage/'):
             abort(404)
-        return os.path.join('/', sanitized)
+        return os.path.join('./', sanitized)
 
     def is_setup_required():
         return not os.path.exists(auth_file)

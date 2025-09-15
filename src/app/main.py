@@ -18,8 +18,6 @@ class NVRSystem:
         self.logger = logging.getLogger(__name__)
         self.logger.info("Initializing OneNVR system")
         self.config = load_config(config_path)
-        self.config['config_path'] = config_path
-        self.config_path = config_path
         self.storage_path = self.config['storage_path']
         self.recorders = {}
         self.video_manager = VideoManager(self.config)
