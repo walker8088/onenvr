@@ -64,7 +64,7 @@ class StreamRecorder:
             '-use_wallclock_as_timestamps', '1',
             '-i', self.rtsp_url,
             #'-cv', self.codec,
-            '-c:v copy -c:a mp3 -ar 16000 -ac 1'
+            '-c:v copy -c:a mp3 -ar 16000 -ac 1',
             '-f', 'segment',
             '-reset_timestamps', '1',
             '-segment_time', str(self.interval),
