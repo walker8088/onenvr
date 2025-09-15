@@ -74,7 +74,7 @@ class StreamRecorder:
             output_pattern
         ]
 
-        logger.debug(f"FFmpeg command for {self.name}: {' '.join(cmd)}")
+        logger.info(f"FFmpeg command for {self.name}: {' '.join(cmd)}")
 
         try:
             self.process = subprocess.Popen(
